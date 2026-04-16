@@ -74,28 +74,60 @@ The navbar fetches from Supabase on every route change to show green/gray dots i
 
 ## Version Control Workflow
 
-This project is version-controlled on GitHub at: https://github.com/jpiresantunes29-dotcom/ProspectView
+This project is **version-controlled on GitHub** at: https://github.com/jpiresantunes29-dotcom/ProspectView
+
+All code changes are tracked, committed, and synchronized with the remote repository to maintain a complete history of development.
+
+### Repository setup
+
+- **Remote:** `origin` → `https://github.com/jpiresantunes29-dotcom/ProspectView.git`
+- **Primary branch:** `main`
+- **Protection:** All significant changes must be committed and pushed
+- **Local state:** Always synced with remote
 
 ### Automated commit strategy
 
 **IMPORTANT: Automatic commits are triggered when:**
-- A feature is completed and working
-- You write "checkpoint" in a message
-- You explicitly request it
+- ✅ A feature is completed and working
+- ✅ You write "checkpoint" in a message
+- ✅ You explicitly request it
+- ✅ After significant code changes (components, pages, logic)
 
 **AUTOMATIC WORKFLOW TRIGGERED:**
 1. `git add .` — Stage all changes (respecting .gitignore)
-2. Create commit with descriptive message
+2. Create commit with descriptive message summarizing changes
 3. `git push origin main` — Push to GitHub immediately
 
-This ensures the remote repository stays in sync with local work.
+This ensures the remote repository stays in sync with local work and maintains a clean commit history.
+
+### Standard synchronization process
+
+When you complete work or say "checkpoint", this automated process runs:
+
+```bash
+# Step 1: Stage all changes (excluding .gitignore files)
+git add .
+
+# Step 2: Create a descriptive commit
+git commit -m "Feat: Add new component
+
+- Describe what was added or changed
+- List multiple changes if applicable
+- Use clear, concise language"
+
+# Step 3: Push to GitHub immediately
+git push origin main
+```
+
+**Result:** Your changes are now in the remote repository and backed up.
 
 ### Commit message guidelines
 
 1. **Write descriptive commit messages**
    - Use imperative mood: "Add X" not "Added X"
    - Be specific about what changed: prefer "Add modal for editing goals" over "Update UI"
-   - If multiple files changed, summarize the overall change in one line
+   - First line is the summary (max 72 characters)
+   - Optional: Add detailed explanation after blank line
    - Example format:
      ```
      Add metric card animation and delta calculation
@@ -109,47 +141,113 @@ This ensures the remote repository stays in sync with local work.
    - If a feature involves changes to multiple files (component + styles + logic), commit together
    - Keep related changes grouped, separate unrelated changes into different commits
    - One feature = one commit (unless it's large, then break logically)
+   - Good grouping improves code review and git history readability
 
 3. **Never commit sensitive files**
-   - ❌ `.env.local` — contains Supabase keys
+   - ❌ `.env.local` — contains Supabase keys (use `.env.local.example` instead)
    - ❌ `node_modules/` — already in .gitignore
    - ❌ `.next/` — build cache, already in .gitignore
-   - ❌ `*.log` files
-   - ✅ Use `.env.local.example` as a template instead
-
-### Common workflow
-
-```bash
-# 1. Make changes to files
-# 2. Test locally with npm run dev
-# 3. Once feature is complete OR write "checkpoint"
-
-# Automatic process will run:
-git add .                           # Stage all changes
-git commit -m "Feat: description"   # Commit with message
-git push origin main                # Push to GitHub
-```
-
-### Manual commands (when needed)
-
-```bash
-git status                   # See unstaged changes
-git log --oneline -10        # See recent commits
-git remote -v               # Verify GitHub remote
-git diff                     # Review changes before staging
-```
+   - ❌ `*.log` files — temporary logs
+   - ❌ `.DS_Store`, `Thumbs.db` — OS files
+   - ✅ Always verify changes with `git status` or `git diff` before committing
 
 ### Commit types
 
-Use these prefixes for clarity:
+Use these prefixes for clarity and consistency:
 
-- **Feat:** New feature or functionality
-- **Fix:** Bug fix
-- **Docs:** Documentation changes
-- **Style:** Code style (formatting, semicolons, etc.)
-- **Refactor:** Code refactoring without changing functionality
-- **Perf:** Performance improvements
-- **Test:** Test-related changes
-- **Chore:** Dependency updates, build scripts, etc.
+| Type | Usage | Example |
+|------|-------|---------|
+| **Feat** | New feature or functionality | `Feat: Add goal editing modal` |
+| **Fix** | Bug fix | `Fix: Correct metric calculation logic` |
+| **Docs** | Documentation changes | `Docs: Update README with setup steps` |
+| **Style** | Code style (formatting, etc.) | `Style: Format component imports` |
+| **Refactor** | Code refactoring (no functionality change) | `Refactor: Extract metric utils` |
+| **Perf** | Performance improvements | `Perf: Optimize dashboard queries` |
+| **Test** | Test-related changes | `Test: Add unit tests for metrics` |
+| **Chore** | Dependencies, build scripts | `Chore: Update Next.js to 16.2.4` |
 
-Example: `Feat: Add goal editing modal to /metas page`
+### Development workflow (step by step)
+
+```bash
+# 1. Make changes to files
+#    Edit components, pages, styles, logic, etc.
+
+# 2. Test locally with dev server
+npm run dev
+#    Verify changes work as expected
+#    Check browser console for errors
+#    Test in both user accounts if needed
+
+# 3. Once feature is complete OR you say "checkpoint"
+#    Automatic process runs:
+#    - git add .
+#    - git commit -m "Feat: description..."
+#    - git push origin main
+
+# 4. Verify push was successful
+#    Check GitHub repository to confirm changes are live
+```
+
+### Checking status and history (manual commands)
+
+When you need to check the state of your repository:
+
+```bash
+git status                   # See unstaged changes and branch status
+git log --oneline -10        # See recent commits (last 10)
+git log --oneline            # See full commit history
+git remote -v               # Verify GitHub remote configuration
+git diff                     # Review changes before staging
+git diff --cached            # Review staged changes
+git show <commit-hash>       # View specific commit details
+```
+
+### Remote synchronization checklist
+
+Before and after significant work:
+
+- [ ] Run `npm run build` to catch type errors
+- [ ] Run `npm run lint` to check code quality
+- [ ] Test locally with `npm run dev`
+- [ ] Review changes with `git status` and `git diff`
+- [ ] Commit with clear message using appropriate type prefix
+- [ ] Verify push was successful with `git log --oneline -1`
+- [ ] Check GitHub repository to confirm remote is updated
+
+### Common scenarios
+
+**Scenario 1: Add a new component**
+```bash
+# After creating app/components/new-component.tsx
+Feat: Add NewComponent with styling
+
+- Implement NewComponent in components/
+- Add TypeScript types and props
+- Add Tailwind styling with design tokens
+```
+
+**Scenario 2: Fix a bug**
+```bash
+Fix: Correct metric calculation for accumulated totals
+
+- Fix off-by-one error in somarRegistros()
+- Add test case to verify fix
+- Update related documentation
+```
+
+**Scenario 3: Refactor code**
+```bash
+Refactor: Extract metric utilities into separate module
+
+- Move metrics functions to lib/metrics-utils.ts
+- Update imports in affected components
+- Maintain same functionality and API
+```
+
+### Important reminders
+
+- 🔒 **Never push sensitive data** — .env files are always excluded
+- 📝 **Commit messages matter** — They help future developers understand changes
+- ⏱️ **Commit frequently** — Smaller commits are easier to review and revert if needed
+- 🔄 **Keep main branch clean** — Always push working code
+- 🌐 **Remote is source of truth** — GitHub repository is the official version
