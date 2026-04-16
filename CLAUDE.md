@@ -6,15 +6,313 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This project uses **Next.js 16** with **React 19** — versions likely newer than your training data. Read `node_modules/next/dist/docs/` before writing code that relies on routing, rendering, or data-fetching APIs. The App Router is in use. Do not rely on Pages Router patterns or older App Router conventions.
 
-## Commands
+## Local Development Setup
 
+### Prerequisites
+
+Before starting, ensure you have:
+- **Node.js** (v18 or higher) — [Download](https://nodejs.org/)
+- **npm** (v9 or higher) — Comes with Node.js
+- **Git** (v2.30 or higher) — [Download](https://git-scm.com/)
+- **Code editor** — VS Code recommended, with extensions:
+  - ESLint
+  - Prettier
+  - Tailwind CSS IntelliSense
+  - TypeScript Vue Plugin (for better type support)
+
+### Installation
+
+1. **Clone the repository** (if starting fresh)
 ```bash
-npm run dev      # start dev server at localhost:3000
-npm run build    # production build (also type-checks)
-npm run lint     # ESLint
+git clone https://github.com/jpiresantunes29-dotcom/ProspectView.git
+cd ProspectView
 ```
 
-No test suite exists. Type safety is the main quality gate — `npm run build` will catch type errors.
+2. **Install dependencies**
+```bash
+npm install
+```
+This installs all packages from `package.json` and creates `node_modules/`
+
+3. **Configure environment variables**
+```bash
+# Copy the template
+cp .env.local.example .env.local
+
+# Edit .env.local with your Supabase credentials
+# Required:
+# - NEXT_PUBLIC_SUPABASE_URL
+# - NEXT_PUBLIC_SUPABASE_ANON_KEY
+```
+
+⚠️ **IMPORTANT:** Never commit `.env.local` — it contains sensitive keys
+
+### Available Commands
+
+```bash
+npm run dev        # Start development server at localhost:3000
+                   # Hot reload enabled — changes appear instantly
+                   # Best for active development
+
+npm run build      # Production build with type checking
+                   # Catches TypeScript errors
+                   # Creates optimized .next/ folder
+
+npm run lint       # Run ESLint to check code quality
+                   # Identifies style issues and potential bugs
+                   # Run before committing
+
+npm start          # Start production server (after npm run build)
+                   # Used for production deployment only
+```
+
+### Development Workflow
+
+#### Starting local development
+
+```bash
+# 1. Install dependencies (first time only)
+npm install
+
+# 2. Start dev server
+npm run dev
+```
+
+Output:
+```
+> next dev
+Local:        http://localhost:3000
+```
+
+**Open** http://localhost:3000 in your browser. The app reloads on file changes.
+
+#### Making changes
+
+```bash
+# Edit files in the project
+# For example: modify app/page.tsx, components/metric-card.tsx, etc.
+
+# The dev server automatically reloads
+# Check browser console (F12) for errors
+```
+
+**Key directories to modify:**
+- `app/` — Pages and layouts (App Router)
+- `components/` — Reusable React components
+- `lib/` — Utility functions and helpers
+- `app/globals.css` — Global styles and design tokens
+
+#### Testing changes
+
+```bash
+# 1. Open browser to http://localhost:3000
+# 2. Navigate through pages:
+#    - / (Dashboard)
+#    - /captacao (João Pedro's page)
+#    - /contato (Atanael's page)
+#    - /funil (Full funnel)
+#    - /metas (Edit goals)
+#    - /registrar (Data entry)
+
+# 3. Check browser DevTools:
+#    - Console (F12) for errors
+#    - Network tab for API calls to Supabase
+#    - Application tab for localStorage data
+
+# 4. Test with different viewport sizes (mobile, tablet, desktop)
+```
+
+#### Code quality checks
+
+Before committing, always run:
+
+```bash
+# Check for TypeScript errors and ESLint issues
+npm run lint
+
+# Run production build to catch type errors
+npm run build
+```
+
+If either command fails, fix the issues before committing.
+
+### Testing strategy
+
+No automated test suite exists. Quality is ensured through:
+
+1. **Type safety** — TypeScript catches errors at compile time
+   ```bash
+   npm run build  # Runs type checker
+   ```
+
+2. **Manual testing** — Test features locally before committing
+   ```bash
+   npm run dev    # Start dev server
+   # Navigate through affected pages
+   # Check browser console for errors
+   # Test with actual Supabase data
+   ```
+
+3. **Code review** — Git commit history and GitHub repository visibility
+   - Descriptive commits make changes easy to understand
+   - GitHub shows all changes in pull requests (future enhancement)
+
+4. **ESLint validation** — Catches common mistakes
+   ```bash
+   npm run lint   # Check code quality
+   ```
+
+### Common development tasks
+
+#### Adding a new component
+
+```bash
+# 1. Create component file
+# Example: components/my-component.tsx
+export default function MyComponent() {
+  return <div>Component content</div>
+}
+
+# 2. Import in page
+# Example: in app/page.tsx or another component
+import MyComponent from '@/components/my-component'
+
+# 3. Run lint and build
+npm run lint
+npm run build
+
+# 4. Test in dev server
+npm run dev
+# Visit http://localhost:3000 and verify it appears
+
+# 5. Commit when complete
+# (Automated process triggers)
+```
+
+#### Modifying a page
+
+```bash
+# 1. Edit page file
+# Example: app/captacao/page.tsx
+
+# 2. Check browser (dev server auto-reloads)
+# http://localhost:3000/captacao
+
+# 3. Verify Supabase data loads correctly
+# Check browser Network tab for API calls
+
+# 4. Run quality checks
+npm run lint
+npm run build
+
+# 5. Commit when complete
+```
+
+#### Updating Supabase connection
+
+```bash
+# 1. If credentials change, update .env.local
+NEXT_PUBLIC_SUPABASE_URL=https://new-url.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=new-key-here
+
+# 2. Stop dev server (Ctrl+C) and restart
+npm run dev
+
+# 3. Test that data loads correctly
+# Navigate to pages and check for Supabase errors
+
+# 4. Do NOT commit .env.local
+# (Already in .gitignore)
+```
+
+### Troubleshooting
+
+#### Port 3000 already in use
+
+```bash
+# Option 1: Kill process on port 3000
+lsof -i :3000  # Find process ID
+kill -9 <PID>  # Kill it
+
+# Option 2: Use different port
+PORT=3001 npm run dev
+```
+
+#### Dependencies out of date
+
+```bash
+# Clean install
+rm -rf node_modules package-lock.json
+npm install
+```
+
+#### TypeScript errors on startup
+
+```bash
+# Run build to see full error list
+npm run build
+
+# Most errors are in your IDE too (if configured)
+# Fix them and run build again
+```
+
+#### Supabase connection errors
+
+```bash
+# 1. Verify .env.local has correct credentials
+cat .env.local
+
+# 2. Check browser Network tab (F12) for API errors
+# Look for requests to .supabase.co
+
+# 3. Verify Supabase project is active and credentials are valid
+
+# 4. Restart dev server if credentials changed
+npm run dev
+```
+
+#### Changes not appearing
+
+```bash
+# 1. Check if dev server is running
+#    Terminal should show "Local: http://localhost:3000"
+
+# 2. Hard refresh browser
+#    Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
+
+# 3. Check browser console (F12) for errors
+#    Scroll up to see initial load errors
+
+# 4. Restart dev server
+#    Stop with Ctrl+C, then npm run dev
+```
+
+### Performance tips
+
+- **Hot reload:** Dev server reloads on file save (no manual refresh)
+- **CSS in dev:** Tailwind classes compile on-demand, fast compilation
+- **Console output:** Watch terminal for React warnings (red/yellow text)
+- **Network throttling:** Use DevTools Network tab to simulate slow connections
+
+### Browser DevTools (F12)
+
+Essential tools for development:
+
+| Tab | Use |
+|-----|-----|
+| **Console** | Check for JavaScript errors and warnings |
+| **Network** | Monitor API calls to Supabase |
+| **Application** | Inspect localStorage (goals), session storage |
+| **Elements** | Inspect HTML and CSS classes |
+| **Sources** | Debug JavaScript with breakpoints |
+
+### Keyboard shortcuts (VS Code)
+
+- `Ctrl+/` — Toggle comment
+- `Alt+Up/Down` — Move line up/down
+- `Ctrl+D` — Select word (use multiple times for multiple selections)
+- `Shift+Alt+F` — Format document (requires Prettier extension)
+- `Ctrl+Shift+P` — Command palette (run any VS Code command)
 
 ## Environment
 
