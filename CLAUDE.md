@@ -74,17 +74,25 @@ The navbar fetches from Supabase on every route change to show green/gray dots i
 
 ## Version Control Workflow
 
-This project is version-controlled on GitHub at: https://github.com/jpiresantunes29-dotcom/Prospect-view
+This project is version-controlled on GitHub at: https://github.com/jpiresantunes29-dotcom/ProspectView
 
-### Commit strategy
+### Automated commit strategy
 
-When working in this repository, follow these rules:
+**IMPORTANT: Automatic commits are triggered when:**
+- A feature is completed and working
+- You write "checkpoint" in a message
+- You explicitly request it
 
-1. **Commit after completing a feature**
-   - Once a feature or fix is complete and working, create a commit immediately
-   - Do not accumulate changes across multiple features before committing
+**AUTOMATIC WORKFLOW TRIGGERED:**
+1. `git add .` — Stage all changes (respecting .gitignore)
+2. Create commit with descriptive message
+3. `git push origin main` — Push to GitHub immediately
 
-2. **Write descriptive commit messages**
+This ensures the remote repository stays in sync with local work.
+
+### Commit message guidelines
+
+1. **Write descriptive commit messages**
    - Use imperative mood: "Add X" not "Added X"
    - Be specific about what changed: prefer "Add modal for editing goals" over "Update UI"
    - If multiple files changed, summarize the overall change in one line
@@ -97,16 +105,12 @@ When working in this repository, follow these rules:
      - Add meta progress bar visualization
      ```
 
-3. **Group related changes in a single commit**
+2. **Group related changes in a single commit**
    - If a feature involves changes to multiple files (component + styles + logic), commit together
    - Keep related changes grouped, separate unrelated changes into different commits
+   - One feature = one commit (unless it's large, then break logically)
 
-4. **Push to GitHub after each commit**
-   - Never leave commits only in local repository
-   - Push immediately after committing: `git push origin main`
-   - This keeps the remote repository in sync and enables collaboration
-
-5. **Never commit sensitive files**
+3. **Never commit sensitive files**
    - ❌ `.env.local` — contains Supabase keys
    - ❌ `node_modules/` — already in .gitignore
    - ❌ `.next/` — build cache, already in .gitignore
@@ -118,17 +122,34 @@ When working in this repository, follow these rules:
 ```bash
 # 1. Make changes to files
 # 2. Test locally with npm run dev
-# 3. Once feature is complete:
+# 3. Once feature is complete OR write "checkpoint"
 
-git add .                    # Stage changes
-git commit -m "Feature: description"  # Commit with message
-git push origin main         # Push to GitHub
+# Automatic process will run:
+git add .                           # Stage all changes
+git commit -m "Feat: description"   # Commit with message
+git push origin main                # Push to GitHub
 ```
 
-### Checking status
+### Manual commands (when needed)
 
 ```bash
 git status                   # See unstaged changes
 git log --oneline -10        # See recent commits
 git remote -v               # Verify GitHub remote
+git diff                     # Review changes before staging
 ```
+
+### Commit types
+
+Use these prefixes for clarity:
+
+- **Feat:** New feature or functionality
+- **Fix:** Bug fix
+- **Docs:** Documentation changes
+- **Style:** Code style (formatting, semicolons, etc.)
+- **Refactor:** Code refactoring without changing functionality
+- **Perf:** Performance improvements
+- **Test:** Test-related changes
+- **Chore:** Dependency updates, build scripts, etc.
+
+Example: `Feat: Add goal editing modal to /metas page`
