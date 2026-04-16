@@ -1,0 +1,192 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-body);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+}
+
+:root {
+  /* Fluent Design System — dark theme neutro (sem matiz azul) */
+  --background: #1F1F1F;
+  --foreground: #FFFFFF;
+  --surface: #282828;
+  --surface-elevated: #323232;
+  --border: #3D3D3D;
+  --border-subtle: #2E2E2E;
+  --border-hover: #505050;
+  --input: #323232;
+  --ring: #0078D4;
+  --primary: #0078D4;
+  --primary-hover: #106EBE;
+  --primary-foreground: #FFFFFF;
+  --muted: #282828;
+  --muted-foreground: #9E9E9E;
+  --radius: 0.25rem;
+
+  --popover: #282828;
+  --popover-foreground: #FFFFFF;
+  --accent: #323232;
+  --accent-foreground: #FFFFFF;
+  --card: #282828;
+  --card-foreground: #FFFFFF;
+  --secondary: #323232;
+  --secondary-foreground: #FFFFFF;
+  --destructive: #D13438;
+
+  /* Navbar */
+  --nav-bg: #1A1A1A;
+  --nav-border: #2E2E2E;
+
+  /* Skeleton */
+  --skeleton-from: #282828;
+  --skeleton-to: #323232;
+
+  /* Overlay sutil (badges, hover) */
+  --subtle-bg: rgba(255, 255, 255, 0.06);
+  --subtle-border: #3D3D3D;
+
+  /* Cores funcionais — Fluent Design palette */
+  --color-captacao: #4DA3F7;
+  --color-contato: #2DB881;
+  --color-taxa: #F0A830;
+  --color-resultado: #9B72CF;
+  --color-produtividade: #8A8A8A;
+}
+
+/* Light theme — Fluent Design System light */
+:root.light {
+  --background: #F3F3F3;
+  --foreground: #1F1F1F;
+  --surface: #FFFFFF;
+  --surface-elevated: #F0F0F0;
+  --border: #E0E0E0;
+  --border-subtle: #EBEBEB;
+  --border-hover: #BDBDBD;
+  --input: #FFFFFF;
+  --ring: #0078D4;
+  --primary: #0078D4;
+  --primary-hover: #106EBE;
+  --primary-foreground: #FFFFFF;
+  --muted: #F0F0F0;
+  --muted-foreground: #616161;
+  --radius: 0.25rem;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #1F1F1F;
+  --accent: #EBEBEB;
+  --accent-foreground: #1F1F1F;
+  --card: #FFFFFF;
+  --card-foreground: #1F1F1F;
+  --secondary: #F0F0F0;
+  --secondary-foreground: #1F1F1F;
+  --destructive: #D13438;
+
+  --nav-bg: #FFFFFF;
+  --nav-border: #E0E0E0;
+
+  --skeleton-from: #E8E8E8;
+  --skeleton-to: #F5F5F5;
+
+  --subtle-bg: rgba(0, 0, 0, 0.05);
+  --subtle-border: #E0E0E0;
+}
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Número de métrica — Fluent style: tabular, sem dramaturgia */
+.metric-number {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.75rem, 2.5vw, 2.25rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  color: var(--foreground);
+}
+
+/* Label de seção */
+.section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Título de página */
+.page-title {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+  line-height: 1.2;
+}
+
+input::placeholder {
+  color: #5A5A5A;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-to) 50%, var(--skeleton-from) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+/* Card métrica — Fluent elevation, sem barra lateral colorida */
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 1px rgba(0,0,0,0.2);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.metric-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: #3D3D3D; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #505050; }
