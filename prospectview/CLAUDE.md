@@ -71,3 +71,64 @@ Goals (metas) are stored in `localStorage` per browser — they are **not** shar
 ### Navbar
 
 The navbar fetches from Supabase on every route change to show green/gray dots indicating whether each user has registered data today. The animated pill indicator uses `offsetLeft` from element refs — it runs in `useLayoutEffect`.
+
+## Version Control Workflow
+
+This project is version-controlled on GitHub at: https://github.com/jpiresantunes29-dotcom/Prospect-view
+
+### Commit strategy
+
+When working in this repository, follow these rules:
+
+1. **Commit after completing a feature**
+   - Once a feature or fix is complete and working, create a commit immediately
+   - Do not accumulate changes across multiple features before committing
+
+2. **Write descriptive commit messages**
+   - Use imperative mood: "Add X" not "Added X"
+   - Be specific about what changed: prefer "Add modal for editing goals" over "Update UI"
+   - If multiple files changed, summarize the overall change in one line
+   - Example format:
+     ```
+     Add metric card animation and delta calculation
+     
+     - Implement count-up animation in metric-card.tsx
+     - Add delta calculation vs previous period
+     - Add meta progress bar visualization
+     ```
+
+3. **Group related changes in a single commit**
+   - If a feature involves changes to multiple files (component + styles + logic), commit together
+   - Keep related changes grouped, separate unrelated changes into different commits
+
+4. **Push to GitHub after each commit**
+   - Never leave commits only in local repository
+   - Push immediately after committing: `git push origin main`
+   - This keeps the remote repository in sync and enables collaboration
+
+5. **Never commit sensitive files**
+   - ❌ `.env.local` — contains Supabase keys
+   - ❌ `node_modules/` — already in .gitignore
+   - ❌ `.next/` — build cache, already in .gitignore
+   - ❌ `*.log` files
+   - ✅ Use `.env.local.example` as a template instead
+
+### Common workflow
+
+```bash
+# 1. Make changes to files
+# 2. Test locally with npm run dev
+# 3. Once feature is complete:
+
+git add .                    # Stage changes
+git commit -m "Feature: description"  # Commit with message
+git push origin main         # Push to GitHub
+```
+
+### Checking status
+
+```bash
+git status                   # See unstaged changes
+git log --oneline -10        # See recent commits
+git remote -v               # Verify GitHub remote
+```
