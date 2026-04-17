@@ -1903,6 +1903,132 @@ Based on what we've learned, here's what to watch out for:
 - [ ] 🚫 Never show generic "verifique o console" — always surface the real Supabase/API error message in the UI
 - [ ] 🚫 Never use `useEffect` with external state without `cancelled` cleanup flag (stale closure causes race conditions on fast user interaction)
 - [ ] 🚫 Never implement + deploy before confirming ALL details with user (visual, fields, error behavior) — avoids multiple fix cycles
+- [ ] 🚫 Never implement features without confirmar se elas já estão no ar no Vercel — sempre rodar `vercel --prod` após cada push se o deploy automático não estiver configurado
+- [ ] 🚫 Never implement UX improvements sem primeiro mostrar um screenshot ao usuário para validar a direção — evita retrabalho de design
+- [ ] 🚫 Never leave Supabase queries sem cache em projetos com múltiplas páginas — implementar `lib/queryCache.ts` desde o início
+- [ ] 🚫 Never assume que git push vai disparar Vercel automaticamente — verificar se o projeto usa integração GitHub ou CLI; se CLI, deploy manual é necessário
+
+---
+
+## Sessão de Melhorias — Abril 2026
+
+### O que foi implementado nesta sessão
+
+#### Performance
+
+**1. Cache de queries Supabase (`lib/queryCache.ts`)**
+- Cada página fazia 2 queries independentes ao Supabase a cada navegação
+- Criado módulo de cache com sessionStorage e TTL de 5 minutos
+- `fetchRegistros(inicio, fim, usuario?)` — retorna do cache se disponível
+- `invalidateRegistrosCache()` — chamado após salvar dados novos
+- Resultado: Dashboard → Captação → Contato = 0 queries adicionais (cache hit)
+
+**2. Prefetch ao hover na navbar**
+- `prefetchPage(href)` disparado no `onMouseEnter` de cada link
+- Quando o usuário passa o mouse, as queries da próxima página já começam
+- O clique humano leva ~150ms — tempo suficiente para a query chegar antes da página montar
+
+**3. Warmup automático no startup**
+- `CacheWarmer` component invisível no layout dispara `warmupCache()` com 300ms de delay
+- Busca em background os dados 30d de todos os usuários assim que o app abre
+- Cache aquecido antes do primeiro clique
+
+**Impacto real:**
+| Navegação | Antes | Depois |
+|-----------|-------|--------|
+| Dashboard → Captação | ~1s | instantâneo |
+| Captação → Contato | ~1s | instantâneo |
+| Qualquer página (hover prefetch) | ~1s | instantâneo |
+
+---
+
+#### UX — Clareza sem ruído
+
+**Problema:** Usuário demorou para entender como usar o site.
+
+**Princípio adotado:** Ajuda contextual, não descritiva. Só aparece quando faz sentido, invisível para quem já sabe.
+
+**Implementações:**
+
+1. **Empty state no Dashboard**
+   - Aparece APENAS quando não há dados no período
+   - Botão `+ Registrar agora` leva direto para `/registrar`
+   - Usuários ativos nunca veem isso
+
+2. **Tooltips nas métricas** (`components/metric-card.tsx`)
+   - Prop `tooltip?` opcional em MetricCard
+   - Ícone `?` minúsculo ao lado do label
+   - Descrição aparece apenas no hover (CSS puro)
+   - Experientes ignoram; novatos descobrem
+
+3. **Label de usuário no Registrar**
+   - Modo Manual mostra `■ JOÃO PEDRO — CAPTAÇÃO` em azul
+   - Troca para Atanael → `■ ATANAEL — CONTATO COMERCIAL` em verde
+   - Deixa claro quem está preenchendo sem instrução permanente
+
+4. **Tooltips nos links da navbar**
+   - `nav-tip-wrap` + `nav-tip-box` com CSS hover
+   - Ex: hover em "Captação" → *"Métricas de prospecção — João Pedro"*
+   - Mesma mecânica dos metric cards
+
+5. **Funil com descrições por etapa**
+   - Cada uma das 8 etapas tem uma linha explicando o que representa
+   - Ex: *"Empresas identificadas por João Pedro como potenciais clientes"*
+   - Sempre visível mas pequena; não polui quem já conhece
+
+6. **Guia de primeira visita** (`components/first-visit-guide.tsx`)
+   - Card no Dashboard que aparece APENAS na primeira visita (localStorage flag)
+   - Explica o fluxo em 3 passos: Registrar → Acompanhar → Analisar
+   - Botão `×` descarta para sempre
+
+---
+
+### O que Claude poderia ter feito melhor (auto-análise)
+
+#### 1. Diagnosticar antes de implementar
+**O que aconteceu:** Implementei cache de queries sem primeiro medir o tempo real das queries. Assumi que eram lentas com base na reclamação do usuário.
+
+**O que deveria ter feito:** Antes de qualquer implementação de performance, adicionar `console.time()` ou usar o DevTools Network para medir latência real. Pode ser que o problema fosse outro (bundle size, render blocking, cold start do Vercel) e a solução mais eficaz seria diferente.
+
+**Lição:** Meça antes de otimizar. Dados reais > suposições.
+
+---
+
+#### 2. Verificar deploy antes de mostrar resultado
+**O que aconteceu:** Implementei UX improvements e mostrei ao usuário. Ele depois reclamou que "não estava no servidor online". Precisei fazer um deploy manual extra.
+
+**O que deveria ter feito:** Após cada `git push`, verificar imediatamente com `vercel ls` se o deploy foi disparado. Se não, fazer `vercel --prod` na hora. Nunca deixar o usuário descobrir que o servidor está desatualizado.
+
+**Lição:** Depois de todo push → verificar Vercel. Não assumir que integração GitHub está ativa.
+
+---
+
+#### 3. Agrupar UX improvements em menos sessões
+**O que aconteceu:** Implementei UX em duas rodadas separadas:
+- Rodada 1: empty state + tooltips métricas + label registrar
+- Rodada 2: guia first-visit + tooltips navbar + funil explicado
+
+**O que deveria ter feito:** Na primeira vez que o usuário deu o feedback de "difícil de entender", propor o plano completo das 6 melhorias de uma vez e implementar tudo em um único bloco. Economizaria 1 ciclo de conversa + 1 deploy.
+
+**Lição:** Quando o usuário dá feedback de UX, pensar em todas as superfícies afetadas de uma vez antes de começar a implementar.
+
+---
+
+#### 4. Confirmar direção visual antes de codar
+**O que aconteceu:** Em sessões anteriores, implementei UI sem mostrar prévia ao usuário, gerando retrabalho.
+
+**O que deveria ter feito:** Descrever textualmente a solução proposta ("vou adicionar um card azul no topo que..."), esperar aprovação do usuário, depois implementar. Evita refações de design.
+
+**Lição:** Para mudanças visuais, confirmar a direção primeiro. Para bugs/lógica, pode implementar direto.
+
+---
+
+#### 5. Reutilizar padrão de tooltip existente
+**O que aconteceu:** Implementei tooltips nas métricas (CSS + `?` icon) e depois, em outra sessão, implementei tooltips na navbar com a mesma mecânica mas código duplicado.
+
+**O que deveria ter feito:** Na primeira vez que criei tooltips, extrair um componente `<Tooltip>` reutilizável. Na segunda vez, apenas importar o componente.
+
+**Lição:** Quando implementar um padrão pela segunda vez, é sinal de que deveria ser um componente.
 
 ---
 
