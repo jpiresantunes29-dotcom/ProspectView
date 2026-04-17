@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useRef, useState, useLayoutEffect, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useTheme, type Theme } from '@/lib/theme'
+import { prefetchPage } from '@/lib/queryCache'
 
 // Links principais — sempre visíveis na navbar (sem scroll)
 const mainLinks = [
@@ -205,6 +206,7 @@ export default function Navbar() {
                     transition: 'color 0.1s ease',
                     whiteSpace: 'nowrap',
                   }}
+                  onMouseEnter={() => prefetchPage(link.href)}
                 >
                   {link.label}
                 </Link>

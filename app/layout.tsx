@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/navbar";
+import CacheWarmer from "@/components/cache-warmer";
 import { ThemeProvider } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({
       </head>
       <body style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
         <ThemeProvider>
+          <CacheWarmer />
           <Navbar />
           <main style={{ maxWidth: "76rem", margin: "0 auto", padding: "2.5rem 2rem" }}>{children}</main>
         </ThemeProvider>
