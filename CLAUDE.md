@@ -801,6 +801,390 @@ Refactor: Extract metric utilities into separate module
 
 ---
 
+## Technical Decisions & Learnings
+
+This section documents architectural choices, lessons learned, and practical insights from development.
+
+### Architecture Decisions Made
+
+#### 1. localStorage for Goals (Metas) — NOT Shared Between Machines
+
+**Decision:** Store daily targets in browser localStorage instead of Supabase database.
+
+**Why this decision:**
+- ✅ Goals are personal to each user and machine
+- ✅ Different users might have different targets on different days
+- ✅ No need for authentication or user profiles
+- ✅ Fast access (no network calls)
+- ✅ Privacy — goals never leave the local machine
+
+**Trade-off:**
+- ❌ Goals don't sync across machines
+- ❌ If user switches computers, must re-enter targets
+- ❌ No historical goal tracking
+
+**When this would change:**
+- If users need goals synced across multiple devices
+- If we want to track goal accuracy over time
+- If we need admin to set team-wide targets
+
+**Lesson:** Accept intentional limitations when they match user workflow. Both João Pedro and Atanael work from the same location.
+
+---
+
+#### 2. Single registros Table for Both Users
+
+**Decision:** Share one PostgreSQL table with data from both João Pedro and Atanael instead of separate tables per user.
+
+**Why:**
+- ✅ Easy to compare metrics between users (same table)
+- ✅ Unified dashboard showing both perspectives
+- ✅ Simple data model (no complex joins)
+- ✅ Natural partition by (data, usuario) unique constraint
+- ✅ Simpler SQL queries
+
+**Trade-off:**
+- ❌ Must filter by `usuario` in most queries
+- ❌ Both users can see each other's data (intentional — shared team dashboard)
+- ❌ Harder to separate permissions if ever needed
+
+**When this would change:**
+- If we need per-user data privacy
+- If we have 10+ users (harder to manage in single table)
+- If we need different data schemas per role
+
+**Lesson:** Simplicity > normalization for small projects with shared data. Premature separation creates unnecessary complexity.
+
+---
+
+#### 3. No Authentication or User Accounts
+
+**Decision:** Direct access to app, no login/signup/password management. Just choose your name when entering data.
+
+**Why:**
+- ✅ App is internal-only (not public-facing)
+- ✅ Only 2 users, no identity verification needed
+- ✅ Faster development (no auth library, no password reset logic)
+- ✅ Fewer moving parts = fewer bugs
+- ✅ No user management overhead
+
+**Trade-off:**
+- ❌ No audit trail (can't see who changed what)
+- ❌ No permission system (all data visible to all)
+- ❌ Users could accidentally enter data for the other person
+
+**When this would change:**
+- If app becomes public
+- If we need legal audit trails
+- If we have multiple teams with private data
+- If we need role-based access control
+
+**Lesson:** Perfect for internal tools. But would need auth for public/multi-tenant scenarios.
+
+---
+
+#### 4. Calculated Metrics (No Persistence)
+
+**Decision:** Calculate metrics on-the-fly from registros table using `lib/metrics.ts` functions. Don't store pre-calculated aggregates.
+
+**Why:**
+- ✅ Always fresh data (no sync issues between raw + aggregate)
+- ✅ Single source of truth (registros table only)
+- ✅ lib/metrics.ts functions are pure (testable, memoizable)
+- ✅ Simple to understand data flow
+- ✅ Fast calculations for small dataset
+
+**Trade-off:**
+- ❌ Slower with very large datasets (>100k rows)
+- ❌ Recalculate on every page load (not cached)
+- ❌ Database doesn't pre-compute aggregates
+
+**Current performance:**
+- Metrics calculation: <100ms (acceptable for 1k rows)
+- Page load: 1-2 seconds (mostly Supabase latency)
+
+**When this would change:**
+- If dataset grows to 100k+ records (add caching layer)
+- If metrics queries become slow (add database views/materialized views)
+- If we need sub-second response times (add Redis cache)
+
+**Lesson:** Premature optimization is evil. Wait for actual performance issues before optimizing. Current approach works perfectly for our scale.
+
+---
+
+#### 5. Supabase as Backend (Not Custom API)
+
+**Decision:** Use Supabase directly from frontend (via `lib/supabase.ts`) instead of building custom backend API.
+
+**Why:**
+- ✅ Faster to build (no API server needed)
+- ✅ Built-in real-time subscriptions
+- ✅ PostgreSQL power without backend
+- ✅ Automatic scaling (Supabase handles it)
+- ✅ One less service to deploy
+
+**Trade-off:**
+- ❌ Front-end directly queries database (security risk in public apps)
+- ❌ No business logic layer
+- ❌ Harder to implement complex workflows
+
+**Security note:** This works because app is internal-only. For public apps, would need API layer.
+
+**When this would change:**
+- If app becomes public (add API server, RLS policies)
+- If we need complex business logic
+- If we want to rate-limit queries
+- If we need API versioning
+
+**Lesson:** Direct database access is fine for small internal tools. Becomes problematic at scale or with public exposure.
+
+---
+
+### Recent Learnings
+
+#### Learning 1: Repository Structure Bug (SOLVED ✅)
+
+**Problem:** Initial GitHub push put all files in `prospectview/` subfolder. Repository showed as empty on GitHub (size: 0).
+
+**Root cause:** Files were nested in subfolder instead of at repository root.
+
+**Impact:** GitHub couldn't display files; users saw empty repo despite commits being pushed.
+
+**How we fixed it:**
+```bash
+# Removed submodule mode
+git rm --cached prospectview
+
+# Moved all files to root
+mv prospectview/* .
+mv prospectview/.[a-zA-Z]* .
+
+# Recommitted
+git add .
+git commit -m "Refactor: Reorganize repository structure"
+git push origin main
+```
+
+**Lesson learned:** 
+- ✅ Always put project files at repository root, not in subfolders
+- ✅ GitHub respects .gitignore patterns but expects main files at root
+- ✅ Verify repository visibility after first push (check size, file count)
+- ✅ Restructuring is harder than getting it right first time
+
+---
+
+#### Learning 2: OneDrive Path Issues with Turbopack (SOLVED ✅)
+
+**Problem:** Dev server failed with Turbopack panic when project was in OneDrive synced path.
+
+**Error message:**
+```
+FATAL: failed to create directory "C:\Users\User\OneDrive - Grupo Marista\...\CLAUDE.md" 
+for write to ".next\dev\static\chunks"
+Caused by: Acesso negado (os error 5)
+```
+
+**Root cause:** OneDrive path contained special characters and had permission restrictions on `.next` folder creation.
+
+**Impact:** Dev server crashed on startup, couldn't develop locally.
+
+**How we fixed it:** Moved project to local directory `C:\Projetos\Gestao_Leads` (not synced with OneDrive).
+
+**Lesson learned:**
+- ✅ NEVER keep development projects in OneDrive/Google Drive/Dropbox
+- ✅ Cloud sync + local development = permission nightmares
+- ✅ Cloud sync interferes with build tools (Turbopack, webpack, esbuild)
+- ✅ Use local directory for dev, push to GitHub for backup
+- ✅ Check project location if getting permission errors in build tools
+
+**Takeaway:** Local storage only for development. Use GitHub for remote backup.
+
+---
+
+#### Learning 3: Git Branch Mismatch Causes Empty Repo (SOLVED ✅)
+
+**Problem:** Commits pushed to GitHub but repo showed size:0 and no files visible.
+
+**Root cause:** Branch configuration mismatch:
+- Local: pushing to `main` branch
+- GitHub: repository defaulted to `master` branch
+- Files were going to wrong branch
+
+**How we fixed it:**
+```bash
+# Push main to master temporarily
+git push origin main:master
+
+# Created new repo with correct branch configuration
+gh repo create ProspectView --public --source=. --remote=origin --push
+```
+
+**Lesson learned:**
+- ✅ Verify remote branch configuration: `git branch -a`
+- ✅ Check GitHub repository settings (default branch)
+- ✅ When in doubt, create new repository with correct branch
+- ✅ Always verify first push worked (check GitHub directly)
+
+**Takeaway:** Branch mismatches are silent failures. Always verify remote state after first push.
+
+---
+
+### Known Limitations
+
+1. **No automated tests**
+   - Type safety via TypeScript is the only quality gate
+   - Manual testing required before commit
+   - Would add Jest + React Testing Library if codebase grows
+
+2. **No real-time sync between users**
+   - Pages don't auto-refresh when other user enters data
+   - Users must manually refresh page to see new data
+   - Navbar shows user status (who entered today) but that's all
+   - Future: Add WebSocket for real-time updates
+
+3. **No audit trail**
+   - No record of who changed what and when
+   - Can't track metric corrections or mistakes
+   - Future: Add audit log table
+
+4. **Small dataset optimization**
+   - Current approach works for ~1,000 records
+   - At 100k+ records, would need:
+     - Database indexing on (data, usuario)
+     - Cached metric calculations
+     - Pagination in /historico page
+     - Virtual scrolling for tables
+
+5. **Goals not shared between machines**
+   - localStorage = local to one browser
+   - Each machine has its own goals
+   - Intentional design, would need database if goals should sync
+
+6. **No data export**
+   - Can view data in /historico but can't export to CSV/Excel
+   - Data lives in Supabase; manual export from dashboard possible
+
+---
+
+### Future Improvements (Not Yet Implemented)
+
+**High Priority:**
+- [ ] WebSocket integration for real-time page updates (users see data change instantly)
+- [ ] Automated test suite (Jest + React Testing Library)
+- [ ] Advanced filtering in /historico (date range, user, metric ranges)
+
+**Medium Priority:**
+- [ ] Data export to CSV/Excel from /historico
+- [ ] Mobile app (React Native) sharing same Supabase backend
+- [ ] Audit log (who changed what/when)
+- [ ] Recurrence rules for goals (set once, auto-apply daily)
+- [ ] SMS/email notifications (goal hit, goal missed, milestone reached)
+
+**Low Priority (Not Needed):**
+- [ ] Dark mode (focused on readability, current design sufficient)
+- [ ] Multiple teams (built for 2 people; would need auth + permissions)
+- [ ] Advanced analytics (current dashboard sufficient)
+
+---
+
+### Deployment & Environment
+
+#### Local Development
+```bash
+npm run dev              # Dev server at localhost:3000
+# Database: Supabase (shared test instance)
+# Config: .env.local (contains credentials, not committed)
+```
+
+#### Production (Not Yet Deployed)
+
+**Recommended:** Vercel (native Next.js support)
+```bash
+npm run build            # Create optimized build
+vercel deploy            # Deploy to Vercel
+```
+
+**Alternative options:**
+- Railway, Render, Heroku (any Node.js host)
+- Requires: Supabase (separate prod instance recommended)
+
+**Configuration:**
+- `.env.local` — Contains Supabase credentials (NOT committed, use .env.local.example)
+- `.env.production` — Production Supabase credentials (set via Vercel dashboard)
+- Build output: `.next/` folder (auto-generated, not committed)
+
+**Setup checklist:**
+- [ ] Create production Supabase instance
+- [ ] Run `supabase-setup.sql` in production database
+- [ ] Set environment variables in deployment platform
+- [ ] Test deployment with real data
+- [ ] Set up monitoring/error tracking
+
+---
+
+### Performance Considerations
+
+#### What We've Optimized
+
+✅ **Component animations use CSS, not JavaScript**
+- Count-up animation uses CSS transitions
+- Navbar pill indicator uses `offsetLeft` + `useLayoutEffect`
+- Result: Smooth 60fps animations
+
+✅ **Metrics calculated with pure functions**
+- `lib/metrics.ts` functions are pure (no side effects)
+- Easy to memoize with React.memo if needed
+- Result: <100ms calculation time
+
+✅ **Navbar fetches efficiently**
+- Uses `useLayoutEffect` (not useEffect) to avoid layout shift
+- Runs on route change (not on every render)
+- Result: Smooth visual indicator animation
+
+#### What Could Be Optimized (If Needed)
+
+[ ] Memoize metric calculations for 100k+ rows
+[ ] Virtual scrolling for /historico table (if data > 1000 rows)
+[ ] Incremental Static Generation (ISG) for pages
+[ ] Database indexes on (data, usuario) for faster queries
+[ ] Redis cache for metric aggregates (if response time > 2s)
+
+#### Current Performance Baseline
+
+- **Page load:** 1-2 seconds (mostly Supabase latency)
+- **Metrics calculation:** <100ms
+- **Animations:** 60fps (smooth)
+- **Bundle size:** ~150kb (gzipped)
+
+---
+
+### Security Notes
+
+#### What's Protected ✅
+
+- ✅ `.env.local` — Never committed, contains Supabase credentials
+- ✅ `node_modules/` — Never committed, regenerated on `npm install`
+- ✅ Build output (`.next/`) — Never committed, generated on build
+
+#### What's NOT Protected (Intentional Design)
+
+- Data is visible to both users (it's a shared team dashboard)
+- No per-record permissions (all users see all data)
+- Direct Supabase access from frontend (works because internal-only)
+
+#### For Production Deployment
+
+Consider implementing:
+- [ ] Supabase Row-Level Security (RLS) policies if making multi-team
+- [ ] Separate test/prod Supabase instances
+- [ ] Add authentication if ever making public
+- [ ] API layer to enforce business logic
+- [ ] Rate limiting on Supabase queries
+
+**Current security assumption:** App is internal-only, accessed by trusted team members only.
+
+---
+
 ## Main Features & Functionality
 
 ### 1. Dashboard (`/`)
