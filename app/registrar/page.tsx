@@ -75,68 +75,64 @@ export default function RegistrarPage() {
 
   return (
     <div style={{ maxWidth: '520px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-        <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
+      {/* Header compacto */}
+      <div style={{ marginBottom: '1.75rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border)' }}>
+        <p style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.75rem' }}>
           Registro diário
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 500, letterSpacing: '-0.02em', color: 'var(--foreground)', margin: 0 }}>
-          {usuario === 'joao_pedro' ? 'João Pedro' : 'Atanael'}
-        </h1>
-        <p style={{ fontSize: '0.72rem', color: 'var(--muted-foreground)', marginTop: '0.4rem' }}>
-          {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
-      </div>
 
-      {/* Seletor de usuário */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        {(['joao_pedro', 'atanael'] as Usuario[]).map((u) => {
-          const ativo = usuario === u
-          const cor   = corUsuario(u)
-          return (
-            <button
-              key={u}
-              onClick={() => setUsuario(u)}
-              style={{
-                flex: 1, padding: '0.6rem 1rem',
-                fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.04em',
-                border: '1px solid', borderRadius: '4px', cursor: 'pointer',
-                transition: 'all 0.15s',
-                borderColor: ativo ? cor : 'var(--border)',
-                background:  ativo ? cor + '14' : 'transparent',
-                color:       ativo ? cor : 'var(--muted-foreground)',
-                fontFamily: "'Segoe UI', system-ui, sans-serif",
-              }}
-            >
-              {u === 'joao_pedro' ? 'João Pedro' : 'Atanael'}
-            </button>
-          )
-        })}
-      </div>
+        {/* Seletor de usuário + toggle de modo na mesma linha */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Usuários */}
+          <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
+            {(['joao_pedro', 'atanael'] as Usuario[]).map((u) => {
+              const ativo = usuario === u
+              const cor   = corUsuario(u)
+              return (
+                <button
+                  key={u}
+                  onClick={() => setUsuario(u)}
+                  style={{
+                    flex: 1, padding: '0.5rem 0.75rem',
+                    fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.03em',
+                    border: '1px solid', borderRadius: '4px', cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    borderColor: ativo ? cor : 'var(--border)',
+                    background:  ativo ? cor + '14' : 'transparent',
+                    color:       ativo ? cor : 'var(--muted-foreground)',
+                    fontFamily: "'Segoe UI', system-ui, sans-serif",
+                  }}
+                >
+                  {u === 'joao_pedro' ? 'João Pedro' : 'Atanael'}
+                </button>
+              )
+            })}
+          </div>
 
-      {/* Toggle de modo */}
-      <div style={{
-        display: 'flex', gap: '2px', marginBottom: '2rem',
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: '6px', padding: '3px',
-      }}>
-        {([['rapido', 'Toque rápido'], ['manual', 'Manual']] as [Modo, string][]).map(([m, label]) => (
-          <button
-            key={m}
-            onClick={() => setModo(m)}
-            style={{
-              flex: 1, padding: '0.45rem 0.75rem',
-              fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em',
-              border: 'none', borderRadius: '4px', cursor: 'pointer',
-              transition: 'all 0.15s',
-              background: modo === m ? 'var(--surface-elevated)' : 'transparent',
-              color:      modo === m ? 'var(--foreground)' : 'var(--muted-foreground)',
-              fontFamily: "'Segoe UI', system-ui, sans-serif",
-            }}
-          >
-            {label}
-          </button>
-        ))}
+          {/* Divisor */}
+          <div style={{ width: '1px', height: '28px', background: 'var(--border)', flexShrink: 0 }} />
+
+          {/* Toggle modo */}
+          <div style={{ display: 'flex', gap: '2px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '5px', padding: '2px', flexShrink: 0 }}>
+            {([['rapido', 'Rápido'], ['manual', 'Manual']] as [Modo, string][]).map(([m, label]) => (
+              <button
+                key={m}
+                onClick={() => setModo(m)}
+                style={{
+                  padding: '0.35rem 0.7rem',
+                  fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.03em',
+                  border: 'none', borderRadius: '3px', cursor: 'pointer',
+                  transition: 'all 0.15s', whiteSpace: 'nowrap',
+                  background: modo === m ? 'var(--surface-elevated)' : 'transparent',
+                  color:      modo === m ? 'var(--foreground)' : 'var(--muted-foreground)',
+                  fontFamily: "'Segoe UI', system-ui, sans-serif",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Conteúdo do modo */}
@@ -563,60 +559,87 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
   const [data,    setData]    = useState(hoje())
   const [valores, setValores] = useState(defaultValores())
   const [status,  setStatus]  = useState<'idle' | 'loading' | 'ok' | 'erro'>('idle')
+  const [erroMsg, setErroMsg] = useState('')
   const [confirmLimpar, setConfirmLimpar] = useState(false)
 
   const campos = usuario === 'joao_pedro' ? camposJP : camposAT
   const cor    = corUsuario(usuario)
 
   // Carrega dados existentes ao mudar data ou usuário
-  useEffect(() => { carregarExistente() }, [data, usuario])
-
-  async function carregarExistente() {
-    const { data: row } = await supabase.from('registros').select('*').eq('data', data).eq('usuario', usuario).single()
-    if (row) {
-      setValores({
-        empresas_encontradas: String(row.empresas_encontradas ?? ''),
-        leads_qualificados:   String(row.leads_qualificados   ?? ''),
-        leads_enviados_crm:   String(row.leads_enviados_crm   ?? ''),
-        leads_contatados:     String(row.leads_contatados     ?? ''),
-        respostas:            String(row.respostas            ?? ''),
-        interessados:         String(row.interessados         ?? ''),
-        reunioes_marcadas:    String(row.reunioes_marcadas    ?? ''),
-        reunioes_realizadas:  String(row.reunioes_realizadas  ?? ''),
-        oportunidades:        String(row.oportunidades        ?? ''),
-        ligacoes_feitas:      String(row.ligacoes_feitas      ?? ''),
-        ligacoes_sucesso:     String(row.ligacoes_sucesso     ?? ''),
-        ligacoes_falha:       String(row.ligacoes_falha       ?? ''),
-        follow_ups:           String(row.follow_ups           ?? ''),
-      })
-    } else {
-      setValores(defaultValores())
+  useEffect(() => {
+    let cancelled = false
+    async function carregar() {
+      const { data: row } = await supabase
+        .from('registros').select('*')
+        .eq('data', data).eq('usuario', usuario).single()
+      if (cancelled) return
+      if (row) {
+        setValores({
+          empresas_encontradas: row.empresas_encontradas != null ? String(row.empresas_encontradas) : '',
+          leads_qualificados:   row.leads_qualificados   != null ? String(row.leads_qualificados)   : '',
+          leads_enviados_crm:   row.leads_enviados_crm   != null ? String(row.leads_enviados_crm)   : '',
+          leads_contatados:     row.leads_contatados     != null ? String(row.leads_contatados)     : '',
+          respostas:            row.respostas            != null ? String(row.respostas)            : '',
+          interessados:         row.interessados         != null ? String(row.interessados)         : '',
+          reunioes_marcadas:    row.reunioes_marcadas    != null ? String(row.reunioes_marcadas)    : '',
+          reunioes_realizadas:  row.reunioes_realizadas  != null ? String(row.reunioes_realizadas)  : '',
+          oportunidades:        row.oportunidades        != null ? String(row.oportunidades)        : '',
+          ligacoes_feitas:      row.ligacoes_feitas      != null ? String(row.ligacoes_feitas)      : '',
+          ligacoes_sucesso:     row.ligacoes_sucesso     != null ? String(row.ligacoes_sucesso)     : '',
+          ligacoes_falha:       row.ligacoes_falha       != null ? String(row.ligacoes_falha)       : '',
+          follow_ups:           row.follow_ups           != null ? String(row.follow_ups)           : '',
+        })
+      } else {
+        setValores(defaultValores())
+      }
     }
-  }
+    carregar()
+    return () => { cancelled = true }
+  }, [data, usuario])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setStatus('loading')
-    const allCampos = [...camposJP, ...camposAT]
+    setErroMsg('')
+
+    // Monta payload apenas com os campos do usuário selecionado
     const payload: Record<string, number | string> = { data, usuario }
-    const seen = new Set<string>()
-    for (const { key } of allCampos) {
-      if (!seen.has(key)) {
-        seen.add(key)
-        payload[key] = parseInt(valores[key as keyof typeof valores] || '0', 10)
-      }
+    const todosCampos = [...camposJP, ...camposAT]
+    for (const { key } of todosCampos) {
+      const val = valores[key as keyof ReturnType<typeof defaultValores>]
+      payload[key] = val !== '' && val !== undefined ? parseInt(val, 10) : 0
     }
-    const { error } = await supabase.from('registros').upsert(payload, { onConflict: 'data,usuario' })
-    if (error) { console.error(error); setStatus('erro') }
-    else { setStatus('ok'); setTimeout(() => setStatus('idle'), 3000) }
+
+    const { error } = await supabase
+      .from('registros')
+      .upsert(payload, { onConflict: 'data,usuario' })
+
+    if (error) {
+      console.error('Supabase error:', error)
+      setErroMsg(error.message)
+      setStatus('erro')
+    } else {
+      setStatus('ok')
+      setTimeout(() => setStatus('idle'), 3000)
+    }
   }
 
   async function handleLimpar() {
     setConfirmLimpar(false)
     setStatus('loading')
-    const { error } = await supabase.from('registros').delete().eq('data', data).eq('usuario', usuario)
-    if (error) { console.error(error); setStatus('erro') }
-    else { setValores(defaultValores()); setStatus('ok'); setTimeout(() => setStatus('idle'), 3000) }
+    setErroMsg('')
+    const { error } = await supabase
+      .from('registros').delete()
+      .eq('data', data).eq('usuario', usuario)
+    if (error) {
+      console.error('Supabase error:', error)
+      setErroMsg(error.message)
+      setStatus('erro')
+    } else {
+      setValores(defaultValores())
+      setStatus('ok')
+      setTimeout(() => setStatus('idle'), 3000)
+    }
   }
 
   return (
@@ -726,7 +749,11 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
       )}
 
       {status === 'ok'   && <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-contato)', marginTop: '0.75rem' }}>Registro salvo com sucesso.</p>}
-      {status === 'erro' && <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--destructive)',   marginTop: '0.75rem' }}>Erro ao salvar. Verifique o console.</p>}
+      {status === 'erro' && (
+        <p style={{ fontSize: '0.72rem', color: 'var(--destructive)', marginTop: '0.75rem', padding: '0.6rem 0.75rem', background: 'rgba(209,52,56,0.08)', borderRadius: '4px', border: '1px solid rgba(209,52,56,0.25)' }}>
+          {erroMsg || 'Erro ao salvar. Verifique o console.'}
+        </p>
+      )}
     </form>
   )
 }
