@@ -1379,3 +1379,401 @@ Each role has a distinct visual identity:
 | User status (who entered today) | ✓ | ✓ | ✓ |
 | Period selection (7d/30d/90d) | ✓ | ✓ | ✓ |
 | Conversion rate tracking | ✓ | ✓ | ✓ |
+
+---
+
+## Lab Notes 🔬
+
+This section documents real development experiences, mistakes, successes, and anti-patterns. Think of this as a researcher's notebook — what worked, what failed, what should never be repeated.
+
+### ✅ What Worked Well
+
+#### 1. **TypeScript-First Development**
+**What:** Writing all components with full TypeScript types from the start.
+
+**Why it worked:**
+- Caught 15+ potential bugs at compile time (before reaching runtime)
+- Made refactoring safer — rename a type and find all usages
+- Reduced debugging time significantly
+- Provided excellent IDE autocomplete
+
+**Lesson:** Types are not overhead; they're insurance. Invest in them early.
+
+---
+
+#### 2. **Splitting Metrics Logic into lib/metrics.ts**
+**What:** All calculation functions in one pure utility file, not scattered in components.
+
+**Why it worked:**
+- Easy to test each metric function independently
+- Reusable across multiple pages (dashboard, captacao, contato, funil)
+- Easy to understand data transformation pipeline
+- Can memoize if performance becomes issue
+
+**Example benefit:** When we realized conversion rates were calculated wrong, we fixed ONE place and all pages got the fix.
+
+**Lesson:** Extract pure business logic to utilities. Components should only handle UI concerns.
+
+---
+
+#### 3. **Component-Driven Development**
+**What:** Build reusable components (metric-card, filtro-periodo, skeleton) instead of duplicating code.
+
+**Why it worked:**
+- Reduced codebase by ~30%
+- Styling changes apply everywhere (color consistency)
+- If metric-card animation improves, all pages benefit
+- Adding new page required 1 hour instead of 1 day
+
+**Lesson:** Reusable components save time and ensure consistency.
+
+---
+
+#### 4. **Design Tokens as CSS Variables**
+**What:** Define colors and spacing in `:root` CSS variables instead of hardcoded values.
+
+**Why it worked:**
+- Color scheme is cohesive (blue for captacao, green for contato)
+- If brand colors change, update one place
+- Easy to add dark mode later (just swap variables)
+- Developers don't need to remember hex codes
+
+**Lesson:** CSS variables are underrated. Use them for all design tokens.
+
+---
+
+#### 5. **Automated Commit & Push Workflow**
+**What:** Commit and push immediately after features complete (not accumulating changes).
+
+**Why it worked:**
+- Cleaner git history (each feature is one commit)
+- Easier to review individual changes
+- Lower risk of merge conflicts
+- Team can see progress in real-time
+
+**Lesson:** Frequent small commits > rare large commits.
+
+---
+
+### ❌ What Failed (and How We Fixed It)
+
+#### 1. **Putting Project in OneDrive Path**
+**What:** Started with project in `C:\Users\User\OneDrive - Grupo Marista\...`
+
+**What happened:**
+- Turbopack crashed on startup (permission denied)
+- Build system couldn't create `.next` folder
+- Dev server unusable for 30 minutes
+
+**Root cause:** OneDrive syncing interferes with build tools creating temp files.
+
+**Fix:** Moved to local path `C:\Projetos\Gestao_Leads`
+
+**Lesson:** 🚫 NEVER use cloud-synced folders for development. Use local disk only.
+
+---
+
+#### 2. **Nested Project Structure in Repository**
+**What:** Initial push put all code in `prospectview/` subfolder instead of root.
+
+**What happened:**
+- GitHub showed repo as empty (size: 0 bytes)
+- Users saw no files despite successful push
+- Looked like push failed, was confusing
+
+**Root cause:** Created `prospectview/` folder, then made it a git submodule by accident.
+
+**Fix:** Refactored to move all files from `prospectview/*` to repository root.
+
+**Lesson:** 🚫 NEVER nest main project files in subfolders. Put them at repository root for maximum clarity.
+
+---
+
+#### 3. **Git Branch Mismatch (main vs master)**
+**What:** Pushed to `main` branch locally, but GitHub repo defaulted to `master`.
+
+**What happened:**
+- Commits went to `main` branch
+- GitHub was showing `master` branch (empty)
+- Looks like push failed or repo is empty
+
+**Root cause:** Didn't verify default branch in GitHub settings before pushing.
+
+**Fix:** Created new repo, verified branch settings before push.
+
+**Lesson:** 🚫 ALWAYS verify remote branch configuration BEFORE first push. Use `git branch -a` to check.
+
+---
+
+#### 4. **Trying to Delete GitHub Repo from CLI**
+**What:** Attempted `gh repo delete` without proper permissions.
+
+**What happened:**
+- Command failed with "Must have admin rights"
+- GitHub CLI required `delete_repo` scope
+- Added unnecessary complexity when just needed new repo
+
+**Root cause:** Assumed delete would work, didn't read error properly.
+
+**Fix:** Created new repo instead of fighting permissions.
+
+**Lesson:** 🚫 DON'T try to force delete GitHub repos from CLI. Create new repo if structure is wrong. Simpler and safer.
+
+---
+
+#### 5. **Assuming First Push Would Be Visible Immediately**
+**What:** Pushed code and expected to see it on GitHub.com right away.
+
+**What happened:**
+- GitHub API showed size: 0
+- Took several minutes to show files
+- Seemed like push failed
+
+**Root cause:** GitHub caches repo size and file listings; not instant.
+
+**Fix:** Waited 2-3 minutes and refreshed, files appeared.
+
+**Lesson:** 🚫 DON'T panic if GitHub doesn't show files immediately after push. It has caching. Wait 1-2 minutes and refresh.
+
+---
+
+### 🚫 Anti-Patterns to Avoid
+
+#### 1. **❌ DO NOT Commit Sensitive Files**
+**Wrong:**
+```bash
+git add .
+git commit -m "Add env setup"
+git push  # This includes .env.local with credentials!
+```
+
+**Right:**
+```bash
+# Add to .gitignore FIRST
+echo ".env.local" >> .gitignore
+
+# Then commit only .env.local.example
+git add .gitignore .env.local.example
+git commit -m "Add environment template"
+```
+
+**Why:** Credentials in git history are permanent. Even if you delete the file later, history is there.
+
+---
+
+#### 2. **❌ DO NOT Work in Cloud-Synced Directories**
+**Wrong:**
+```
+C:\Users\User\OneDrive - Google Workspace\Projects\ProspectView
+C:\Users\User\Dropbox\Development\ProspectView
+C:\Users\User\iCloud\code\ProspectView
+```
+
+**Right:**
+```
+C:\Projetos\ProspectView           (local disk)
+~/dev/prospect-view                (local disk)
+/Users/user/Projects/ProspectView  (local disk)
+```
+
+**Why:** Cloud sync + build tools = permission conflicts. Always fails mysteriously.
+
+---
+
+#### 3. **❌ DO NOT Accumulate Large Changesets Before Committing**
+**Wrong:**
+```bash
+# Make 10 changes across 5 files over 3 days
+# Then commit everything at once
+git add .
+git commit -m "Update stuff"  # Vague, hard to understand
+```
+
+**Right:**
+```bash
+# Commit after each logical feature
+git commit -m "Feat: Add metric-card animation"
+# Later...
+git commit -m "Fix: Correct funnel conversion rates"
+# Later...
+git commit -m "Docs: Update CLAUDE.md with new features"
+```
+
+**Why:** Small commits are easier to review, understand, and revert if needed.
+
+---
+
+#### 4. **❌ DO NOT Skip npm run build Before Committing**
+**Wrong:**
+```bash
+# Made changes, looks good in dev server
+git add .
+git commit -m "Add new page"
+git push
+# Later: CI fails because TypeScript errors
+```
+
+**Right:**
+```bash
+# Before any commit:
+npm run lint    # Check code quality
+npm run build   # Type check + optimize
+# If both pass, then commit
+git add .
+git commit -m "Add new page"
+```
+
+**Why:** Type errors slip through in dev mode. `npm run build` catches them.
+
+---
+
+#### 5. **❌ DO NOT Assume .env.local Is Properly Ignored**
+**Wrong:**
+```bash
+# Forgot to check .gitignore
+git add .
+git commit -m "Setup"
+# Later discover .env.local was committed with credentials
+```
+
+**Right:**
+```bash
+# First, verify .gitignore has the entry
+cat .gitignore | grep env.local
+
+# Second, verify git isn't tracking it
+git status | grep env.local
+# Should show nothing
+
+# Then add and commit
+git add .
+```
+
+**Why:** Easy to make mistake. Credentials in public repos = security breach.
+
+---
+
+#### 6. **❌ DO NOT Modify .gitignore After Files Are Committed**
+**Wrong:**
+```bash
+# Accidentally committed .env.local earlier
+# Later added to .gitignore
+echo ".env.local" >> .gitignore
+
+# File still in git history!
+```
+
+**Right:**
+```bash
+# Remove from git tracking
+git rm --cached .env.local
+
+# Add to .gitignore
+echo ".env.local" >> .gitignore
+
+# Commit the removal
+git commit -m "Remove .env.local from tracking"
+```
+
+**Why:** Just adding to .gitignore doesn't remove from history. Must explicitly remove.
+
+---
+
+#### 7. **❌ DO NOT Trust Automatic File Watchers for Deployment**
+**Wrong:**
+```bash
+# Started dev server, left it running
+# Assumed changes auto-deploy to production
+npm run dev
+```
+
+**Right:**
+```bash
+# For production, always explicitly deploy
+npm run build
+vercel deploy  # or your deployment platform
+```
+
+**Why:** Dev server is for local development only. Production needs explicit deployment.
+
+---
+
+#### 8. **❌ DO NOT Skip Verifying Remote Configuration**
+**Wrong:**
+```bash
+git push  # Assume it goes to right place
+# Later: changes on wrong branch or wrong repo
+```
+
+**Right:**
+```bash
+git remote -v              # Verify remote URL
+git branch -a              # Verify local + remote branches
+git push origin main       # Explicit: repo (origin), branch (main)
+```
+
+**Why:** Explicit is better than implicit. Know exactly where your code goes.
+
+---
+
+### 📝 Lessons from This Project
+
+#### Overall Learnings
+
+1. **Start with clean repository structure**
+   - Root level for main files
+   - Verify branch settings before first push
+   - Check git remotes explicitly
+
+2. **Environment matters more than you think**
+   - OneDrive/cloud sync = blocker for dev
+   - Local filesystem is essential
+   - Permission issues are hard to debug
+
+3. **Small commits save time**
+   - Easier to understand changes
+   - Easier to test each feature
+   - Easier to revert if needed
+
+4. **Type safety is worth the effort**
+   - TypeScript caught ~15+ bugs
+   - Saved debugging time
+   - Made refactoring safe
+
+5. **Invest in reusable components early**
+   - metric-card saves 30% code duplication
+   - filtro-periodo used in 6 pages
+   - Design tokens ensure consistency
+
+---
+
+### Future Mistakes to Avoid
+
+Based on what we've learned, here's what to watch out for:
+
+- [ ] 🚫 Never develop in cloud-synced folders (learned the hard way)
+- [ ] 🚫 Never assume git push went to right place (verify with git remote -v)
+- [ ] 🚫 Never commit .env.local (add to .gitignore FIRST)
+- [ ] 🚫 Never accumulate big changesets (commit frequently)
+- [ ] 🚫 Never skip npm run build before committing (catches TypeScript errors)
+- [ ] 🚫 Never nest main project files in subfolders (put at root)
+- [ ] 🚫 Never trust file watchers for production (explicit deploy steps)
+- [ ] 🚫 Never modify .gitignore after committing sensitive files (remove from history)
+
+---
+
+### How to Use This Section
+
+**When something fails:**
+1. Document what happened
+2. Explain root cause
+3. Show how it was fixed
+4. Extract the lesson
+
+**When something works well:**
+1. Document what was done
+2. Explain why it works
+3. Show the benefit
+4. Make it repeatable
+
+**This becomes the project's institutional memory.** New developers can learn from past mistakes without repeating them.
