@@ -1,0 +1,39 @@
+{
+  "gitAutoCommit": {
+    "enabled": true,
+    "description": "Automatically commit changes to GitHub",
+    "rules": {
+      "autoCommitAfterEdit": true,
+      "autoCommitAfterToolUse": true,
+      "groupByFeature": true
+    },
+    "excludePatterns": [
+      "node_modules/**",
+      ".next/**",
+      ".env.local",
+      "**/*.log",
+      ".DS_Store",
+      "Thumbs.db",
+      ".vercel/**",
+      ".vscode/**"
+    ],
+    "includePatterns": [
+      "app/**",
+      "components/**",
+      "lib/**",
+      "public/**",
+      "*.json",
+      "*.ts",
+      "*.tsx",
+      "*.css",
+      "*.md"
+    ]
+  },
+  "schedules": {
+    "autoCommitAndPush": {
+      "enabled": true,
+      "description": "Auto-commit and push changes every 2 hours",
+      "frequency": "every 2 hours"
+    }
+  }
+}

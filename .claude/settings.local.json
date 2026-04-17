@@ -20,7 +20,24 @@
       "Bash(git push *)",
       "Bash(git rm *)",
       "Bash(gh api *)",
-      "Bash(git remote *)"
+      "Bash(git remote *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__switch_browser",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__computer",
+      "Bash(npm run *)",
+      "Bash(vercel --prod)",
+      "Bash(npm install *)",
+      "Bash(vercel login *)",
+      "Bash(claude plugins *)",
+      "Bash(vercel --prod --name prospectview-app)",
+      "Bash(vercel env *)",
+      "Bash(vercel link *)",
+      "Bash(rm vercel.json)",
+      "Bash(vercel deploy *)",
+      "Bash(rm -rf .vercel)",
+      "Bash(vercel --prod --yes --name prospectview)",
+      "mcp__scheduled-tasks__create_scheduled_task"
     ]
   }
 }
