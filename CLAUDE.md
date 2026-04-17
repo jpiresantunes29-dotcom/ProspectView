@@ -89,6 +89,19 @@ ProspectView (Next.js App)
 
 This project uses **Next.js 16** with **React 19** — versions likely newer than your training data. Read `node_modules/next/dist/docs/` before writing code that relies on routing, rendering, or data-fetching APIs. The App Router is in use. Do not rely on Pages Router patterns or older App Router conventions.
 
+## Automated Browser Launch
+
+**Important:** When you request to:
+- Run the dev server (`npm run dev`)
+- View the application
+- Open the application
+
+Claude will **automatically open Chrome** to the running application (usually `http://localhost:3000`) instead of just providing a link.
+
+This happens automatically — no need to manually copy/paste URLs.
+
+---
+
 ## Local Development Setup
 
 ### Prerequisites
@@ -1777,3 +1790,23 @@ Based on what we've learned, here's what to watch out for:
 4. Make it repeatable
 
 **This becomes the project's institutional memory.** New developers can learn from past mistakes without repeating them.
+
+---
+
+### Development Automation
+
+**Browser Launch on Dev Server Start:**
+
+When you request:
+- "Run the dev server"
+- "Start the application"
+- "Open the app"
+- "View the application"
+
+Claude automatically:
+1. Starts `npm run dev`
+2. Waits for server to be ready
+3. **Opens Chrome** to `http://localhost:3000`
+4. No manual link copying needed
+
+This streamlines the development workflow — get the app running and visible in one request.
