@@ -89,6 +89,55 @@ export default function DashboardPage() {
             </section>
           ))}
         </div>
+      ) : registros.length === 0 ? (
+        /* Empty state — só aparece quando não há nenhum dado no período */
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1rem',
+          padding: '5rem 2rem',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '8px',
+            border: '1px solid #2E2E2E',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '0.5rem',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A4A4A" strokeWidth="1.5">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+          </div>
+          <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#9E9E9E' }}>
+            Nenhum registro encontrado
+          </p>
+          <p style={{ fontSize: '0.75rem', color: '#5A5A5A', maxWidth: '260px', lineHeight: 1.6 }}>
+            Ainda não há dados para o período selecionado. Comece registrando as atividades do dia.
+          </p>
+          <a href="/registrar" style={{
+            marginTop: '0.5rem',
+            padding: '8px 18px',
+            background: '#1A3A5C',
+            border: '1px solid #2A5A8A',
+            borderRadius: '4px',
+            fontSize: '0.72rem',
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: '#4DA3F7',
+            textDecoration: 'none',
+            transition: 'background 0.15s ease',
+          }}>
+            + Registrar agora
+          </a>
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
 
@@ -108,12 +157,16 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
               <MetricCard label="Empresas encontradas" value={t.empresas_encontradas} color="captacao"
-                prev={prevT.empresas_encontradas} meta={metas?.empresas_encontradas} dias={dias} />
+                prev={prevT.empresas_encontradas} meta={metas?.empresas_encontradas} dias={dias}
+                tooltip="Total de empresas prospectadas por João Pedro" />
               <MetricCard label="Leads qualificados" value={t.leads_qualificados} sub={`Taxa: ${pct(t.leads_qualificados, t.empresas_encontradas)}`} color="captacao"
-                prev={prevT.leads_qualificados} meta={metas?.leads_qualificados} dias={dias} />
+                prev={prevT.leads_qualificados} meta={metas?.leads_qualificados} dias={dias}
+                tooltip="Empresas que passaram pelo critério de qualificação" />
               <MetricCard label="Enviados ao CRM" value={t.leads_enviados_crm} sub={`Taxa: ${pct(t.leads_enviados_crm, t.leads_qualificados)}`} color="captacao"
-                prev={prevT.leads_enviados_crm} meta={metas?.leads_enviados_crm} dias={dias} />
-              <MetricCard label="Enviados por dia" value={porDia(t.leads_enviados_crm, dias)} color="produtividade" />
+                prev={prevT.leads_enviados_crm} meta={metas?.leads_enviados_crm} dias={dias}
+                tooltip="Leads aprovados e encaminhados para contato comercial" />
+              <MetricCard label="Enviados por dia" value={porDia(t.leads_enviados_crm, dias)} color="produtividade"
+                tooltip="Média diária de leads enviados ao CRM no período" />
             </div>
           </section>
 
@@ -133,13 +186,17 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
               <MetricCard label="Leads contatados" value={t.leads_contatados} color="contato"
-                prev={prevT.leads_contatados} meta={metas?.leads_contatados} dias={dias} />
+                prev={prevT.leads_contatados} meta={metas?.leads_contatados} dias={dias}
+                tooltip="Leads efetivamente contatados por Atanael" />
               <MetricCard label="Respostas" value={t.respostas} sub={`Taxa: ${pct(t.respostas, t.leads_contatados)}`} color="contato"
-                prev={prevT.respostas} meta={metas?.respostas} dias={dias} />
+                prev={prevT.respostas} meta={metas?.respostas} dias={dias}
+                tooltip="Leads que responderam positivamente ao contato" />
               <MetricCard label="Interessados" value={t.interessados} color="contato"
-                prev={prevT.interessados} meta={metas?.interessados} dias={dias} />
+                prev={prevT.interessados} meta={metas?.interessados} dias={dias}
+                tooltip="Leads que demonstraram interesse no produto" />
               <MetricCard label="Reunioes marcadas" value={t.reunioes_marcadas} color="taxa"
-                prev={prevT.reunioes_marcadas} meta={metas?.reunioes_marcadas} dias={dias} />
+                prev={prevT.reunioes_marcadas} meta={metas?.reunioes_marcadas} dias={dias}
+                tooltip="Reuniões de venda agendadas no período" />
             </div>
           </section>
 
@@ -158,9 +215,12 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <MetricCard label="Oportunidades geradas" value={t.oportunidades} color="resultado"
-                prev={prevT.oportunidades} meta={metas?.oportunidades} dias={dias} />
-              <MetricCard label="Conversao geral" value={pct(t.oportunidades, t.leads_enviados_crm)} sub="enviados para oportunidades" color="taxa" />
-              <MetricCard label="Contatados por dia" value={porDia(t.leads_contatados, dias)} color="produtividade" />
+                prev={prevT.oportunidades} meta={metas?.oportunidades} dias={dias}
+                tooltip="Negócios com potencial real de fechamento" />
+              <MetricCard label="Conversao geral" value={pct(t.oportunidades, t.leads_enviados_crm)} sub="enviados para oportunidades" color="taxa"
+                tooltip="% de leads enviados ao CRM que viraram oportunidades" />
+              <MetricCard label="Contatados por dia" value={porDia(t.leads_contatados, dias)} color="produtividade"
+                tooltip="Média diária de leads contatados por Atanael" />
             </div>
           </section>
 

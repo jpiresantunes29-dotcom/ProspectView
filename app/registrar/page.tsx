@@ -674,9 +674,12 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
 
       {/* Campos */}
       <div style={{ marginBottom: '2rem' }}>
-        <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '1rem' }}>
-          Métricas
-        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '1px', background: cor, flexShrink: 0 }} />
+          <label style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: cor }}>
+            {usuario === 'joao_pedro' ? 'João Pedro — Captação' : 'Atanael — Contato comercial'}
+          </label>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {campos.map(({ key, label }) => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.6rem 0.875rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '4px', transition: 'border-color 0.15s' }}

@@ -185,6 +185,11 @@ input[type=number]::-webkit-outer-spin-button {
   box-shadow: 0 2px 6px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.24);
 }
 
+/* Tooltip das metric cards */
+.metric-tooltip-wrap:hover .metric-tooltip-box {
+  opacity: 1 !important;
+}
+
 /* Scrollbar customizada */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--background); }

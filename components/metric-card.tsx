@@ -21,9 +21,10 @@ type Props = {
   prev?: number
   meta?: number
   dias?: number
+  tooltip?: string
 }
 
-export default function MetricCard({ label, value, sub, color = 'default', prev, meta, dias }: Props) {
+export default function MetricCard({ label, value, sub, color = 'default', prev, meta, dias, tooltip }: Props) {
   const numericValue = typeof value === 'number' ? value : NaN
   const animated = useCountUp(isNaN(numericValue) ? 0 : numericValue)
   const displayValue = typeof value === 'number' ? animated : value
@@ -70,6 +71,46 @@ export default function MetricCard({ label, value, sub, color = 'default', prev,
         }}>
           {label}
         </p>
+        {tooltip && (
+          <div style={{ position: 'relative', display: 'inline-flex', marginLeft: '2px' }} className="metric-tooltip-wrap">
+            <span style={{
+              width: '13px',
+              height: '13px',
+              borderRadius: '50%',
+              border: '1px solid #3D3D3D',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.55rem',
+              color: '#5A5A5A',
+              cursor: 'default',
+              flexShrink: 0,
+              userSelect: 'none',
+            }}>?</span>
+            <div className="metric-tooltip-box" style={{
+              position: 'absolute',
+              bottom: 'calc(100% + 6px)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#1A1A1A',
+              border: '1px solid #2E2E2E',
+              borderRadius: '4px',
+              padding: '6px 9px',
+              fontSize: '0.65rem',
+              color: '#BDBDBD',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              opacity: 0,
+              transition: 'opacity 0.15s ease',
+              zIndex: 50,
+              fontWeight: 400,
+              letterSpacing: '0.01em',
+              textTransform: 'none',
+            }}>
+              {tooltip}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Número principal — branco, sem cor saturada */}
