@@ -6,17 +6,21 @@ import { useRef, useState, useLayoutEffect, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useTheme, type Theme } from '@/lib/theme'
 
-const links = [
+// Links principais — sempre visíveis na navbar (sem scroll)
+const mainLinks = [
   { href: '/', label: 'Dashboard' },
   { href: '/funil', label: 'Funil' },
   { href: '/captacao', label: 'Captação' },
   { href: '/contato', label: 'Contato' },
+  { href: '/historico', label: 'Histórico' },
+]
+
+// Links secundários — ficam no drawer (hamburguer)
+const drawerLinks = [
+  { href: '/metas', label: 'Metas' },
   { href: '/quick-log', label: 'Quick Log' },
   { href: '/metricas-tier', label: 'Métricas TIER' },
   { href: '/diagnostico', label: 'Diagnóstico' },
-  { href: '/historico', label: 'Histórico' },
-  { href: '/metas', label: 'Metas' },
-  { href: '/registrar', label: 'Registrar' },
 ]
 
 const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
@@ -68,21 +72,37 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme()
 
   useLayoutEffect(() => {
-    const activeIdx = links.findIndex((l) => l.href === pathname)
+    const activeIdx = mainLinks.findIndex((l) => l.href === pathname)
     const el = linkRefs.current[activeIdx]
     if (el) {
       setIndicator({ left: el.offsetLeft, width: el.offsetWidth, ready: true })
+    } else {
+      // Se for uma rota secundária, esconde o indicador
+      setIndicator({ left: 0, width: 0, ready: false })
     }
   }, [pathname])
 
+  // Verifica registro do dia — só refaz quando muda de página
+  // Usa cache em sessionStorage para evitar chamadas repetidas
   useEffect(() => {
     const hoje = new Date().toISOString().slice(0, 10)
+    const cacheKey = `registro-hoje-${hoje}`
+    const cached = sessionStorage.getItem(cacheKey)
+
+    if (cached) {
+      setRegistradoHoje(JSON.parse(cached))
+      return
+    }
+
     supabase.from('registros').select('usuario').eq('data', hoje).then(({ data }) => {
       const usuarios = (data ?? []).map((r: { usuario: string }) => r.usuario)
-      setRegistradoHoje({
+      const estado = {
         joao: usuarios.includes('joao_pedro'),
         atanael: usuarios.includes('atanael'),
-      })
+      }
+      setRegistradoHoje(estado)
+      // Cache por 5 minutos
+      sessionStorage.setItem(cacheKey, JSON.stringify(estado))
     })
   }, [pathname])
 
@@ -94,6 +114,8 @@ export default function Navbar() {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
+
+  const isRegistrar = pathname === '/registrar'
 
   return (
     <>
@@ -112,7 +134,7 @@ export default function Navbar() {
           display: 'flex',
           alignItems: 'center',
           height: '48px',
-          gap: '1.5rem',
+          gap: '1rem',
         }}>
 
           {/* Logo */}
@@ -148,8 +170,8 @@ export default function Navbar() {
           {/* Divisor vertical */}
           <div style={{ width: '1px', height: '18px', background: 'var(--border)', flexShrink: 0 }} />
 
-          {/* Nav links */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, overflowX: 'auto' }}>
+          {/* Nav links — sem overflow, fixo */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
             {indicator.ready && (
               <div style={{
                 position: 'absolute',
@@ -162,7 +184,7 @@ export default function Navbar() {
               }} />
             )}
 
-            {links.map((link, i) => {
+            {mainLinks.map((link, i) => {
               const isActive = pathname === link.href
               return (
                 <Link
@@ -171,7 +193,7 @@ export default function Navbar() {
                   ref={(el) => { linkRefs.current[i] = el }}
                   style={{
                     position: 'relative',
-                    padding: '0 12px',
+                    padding: '0 10px',
                     height: '48px',
                     display: 'flex',
                     alignItems: 'center',
@@ -191,8 +213,43 @@ export default function Navbar() {
             })}
           </div>
 
+          {/* Botão REGISTRAR — CTA em destaque */}
+          <Link
+            href="/registrar"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '0 14px',
+              height: '30px',
+              background: isRegistrar ? '#106EBE' : '#0078D4',
+              color: '#FFFFFF',
+              borderRadius: '4px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              flexShrink: 0,
+              transition: 'background 0.15s ease, transform 0.1s ease',
+              boxShadow: '0 1px 3px rgba(0,120,212,0.3)',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = '#106EBE'
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = isRegistrar ? '#106EBE' : '#0078D4'
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Registrar
+          </Link>
+
           {/* Status de registro */}
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
             {[
               { key: 'joao', label: 'JP', done: registradoHoje.joao, color: '#4DA3F7' },
               { key: 'atanael', label: 'AT', done: registradoHoje.atanael, color: '#2DB881' },
@@ -313,11 +370,11 @@ export default function Navbar() {
             textTransform: 'uppercase',
             color: 'var(--foreground)',
           }}>
-            Configurações
+            Menu
           </span>
           <button
             onClick={() => setSettingsOpen(false)}
-            aria-label="Fechar configurações"
+            aria-label="Fechar menu"
             style={{
               background: 'none',
               border: 'none',
@@ -349,9 +406,61 @@ export default function Navbar() {
         {/* Conteúdo */}
         <div style={{ padding: '1.25rem', flex: 1, overflowY: 'auto' }}>
 
+          {/* Seção: Páginas */}
+          <div style={{ marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>
+              Páginas
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '1.5rem' }}>
+            {drawerLinks.map(({ href, label }) => {
+              const isActive = pathname === href
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setSettingsOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '4px',
+                    background: isActive ? 'var(--accent)' : 'transparent',
+                    color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                    fontSize: '0.8rem',
+                    fontWeight: isActive ? 600 : 400,
+                    textDecoration: 'none',
+                    transition: 'background 0.1s ease, color 0.1s ease',
+                    fontFamily: "'Segoe UI', system-ui, sans-serif",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLAnchorElement).style.background = 'var(--accent)'
+                      ;(e.currentTarget as HTMLAnchorElement).style.color = 'var(--foreground)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'
+                      ;(e.currentTarget as HTMLAnchorElement).style.color = 'var(--muted-foreground)'
+                    }
+                  }}
+                >
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Divisor */}
+          <div style={{ height: '1px', background: 'var(--border)', marginBottom: '1.25rem' }} />
+
           {/* Seção: Personalização */}
-          <div style={{ marginBottom: '0.75rem' }}>
-            <span className="section-label">Personalização</span>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>
+              Personalização
+            </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
