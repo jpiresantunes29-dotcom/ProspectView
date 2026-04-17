@@ -1491,6 +1491,32 @@ This section documents real development experiences, mistakes, successes, and an
 **Why it worked:**
 - Cleaner git history (each feature is one commit)
 - Easier to review individual changes
+
+---
+
+#### 6. **Unifying Two Pages into One with Mode Toggle**
+**What:** Merged `/quick-log` and `/registrar` into a single page with Rápido/Manual toggle.
+
+**Why it worked:**
+- Single entry point from the navbar (less confusion for users)
+- Both modes share the same fields and data — no duplication
+- `/quick-log` now redirects automatically to `/registrar` (no broken links)
+- UX cleaner: user learns one place for all registration tasks
+
+**Lesson:** When two pages do the same thing differently, merge them with a mode toggle. Don't maintain two separate pages.
+
+---
+
+#### 7. **Corporate Design Without Emojis**
+**What:** Replaced emoji buttons with text-only uppercase labels + color-coded borders.
+
+**Why it worked:**
+- Consistent with the Fluent Design system already used in the project
+- Numbers are the focus (displayed large with display font)
+- `+1` badge communicates the action without needing an icon
+- Professional appearance suitable for business context
+
+**Lesson:** Emojis add noise in corporate dashboards. Use color, typography, and spacing instead.
 - Lower risk of merge conflicts
 - Team can see progress in real-time
 
@@ -1577,6 +1603,77 @@ This section documents real development experiences, mistakes, successes, and an
 **Fix:** Waited 2-3 minutes and refreshed, files appeared.
 
 **Lesson:** 🚫 DON'T panic if GitHub doesn't show files immediately after push. It has caching. Wait 1-2 minutes and refresh.
+
+---
+
+#### 6. **Vercel Ghost Project via `--name` Flag (SOLVED ✅)**
+
+**What:** Used `vercel --prod --name prospectview-app` when a previous deploy failed due to invalid project name.
+
+**What happened:**
+- Created a second Vercel project (`prospectview-app`) alongside the correct one (`prospectview`)
+- Both projects were connected to the same GitHub repo
+- Every `git push` triggered builds on BOTH — the ghost project failed every time
+- User received error emails from Vercel on every single push
+
+**Root cause:** `--name` flag silently creates a new project without asking. We didn't check existing projects first.
+
+**Fix:** Ran `vercel project ls` to discover the ghost, then `vercel project rm prospectview-app`.
+
+**Lesson:** 🚫 ALWAYS run `vercel project ls` before any deploy. Never use `--name` without checking existing projects first.
+
+---
+
+#### 7. **useEffect Stale Closure in Manual Mode (SOLVED ✅)**
+
+**What:** `ModoManual` component used `useEffect(() => { carregarExistente() }, [data, usuario])` without cleanup.
+
+**What happened:**
+- When user quickly changed date or switched users, multiple async queries ran simultaneously
+- Earlier query resolved after later one, overwriting correct state with stale data
+- Form submitted stale/incorrect values → Supabase error
+
+**Root cause:** No `cancelled` flag to abort in-flight requests when effect re-runs.
+
+**Fix:**
+```typescript
+useEffect(() => {
+  let cancelled = false
+  async function carregar() {
+    const { data: row } = await supabase...
+    if (cancelled) return  // ← guard
+    setValores(...)
+  }
+  carregar()
+  return () => { cancelled = true }  // ← cleanup
+}, [data, usuario])
+```
+
+**Lesson:** 🚫 ALWAYS add `cancelled` cleanup to async `useEffect` calls. Without it, race conditions are guaranteed on fast user interaction.
+
+---
+
+#### 8. **Generic Error Messages Hide Real Problems**
+
+**What:** Error handler showed "Erro ao salvar. Verifique o console." instead of the actual error.
+
+**What happened:**
+- User tested, got generic message, couldn't self-diagnose
+- Required a full debug cycle: user reports → Claude investigates → fix → redeploy
+
+**Root cause:** `setStatus('erro')` without capturing `error.message`.
+
+**Fix:**
+```typescript
+if (error) {
+  setErroMsg(error.message)  // ← show real message
+  setStatus('erro')
+}
+// In JSX:
+{status === 'erro' && <p>{erroMsg || 'Erro desconhecido'}</p>}
+```
+
+**Lesson:** 🚫 NEVER show generic error messages. Always surface the real error (Supabase, API, network) directly in the UI.
 
 ---
 
@@ -1802,6 +1899,10 @@ Based on what we've learned, here's what to watch out for:
 - [ ] 🚫 Never nest main project files in subfolders (put at root)
 - [ ] 🚫 Never trust file watchers for production (explicit deploy steps)
 - [ ] 🚫 Never modify .gitignore after committing sensitive files (remove from history)
+- [ ] 🚫 Never use `--name` in `vercel --prod` without running `vercel project ls` first (creates ghost projects that spam error emails on every push)
+- [ ] 🚫 Never show generic "verifique o console" — always surface the real Supabase/API error message in the UI
+- [ ] 🚫 Never use `useEffect` with external state without `cancelled` cleanup flag (stale closure causes race conditions on fast user interaction)
+- [ ] 🚫 Never implement + deploy before confirming ALL details with user (visual, fields, error behavior) — avoids multiple fix cycles
 
 ---
 
