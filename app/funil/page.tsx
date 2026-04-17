@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import type { Registro } from '@/lib/supabase'
+import { fetchRegistros } from '@/lib/queryCache'
 import { somarRegistros, buildFunil } from '@/lib/metrics'
 import FiltroPeriodo, { periodoParaDatas, type Periodo } from '@/components/filtro-periodo'
 import AnimatedTitle from '@/components/animated-title'
@@ -19,9 +19,8 @@ export default function FunilPage() {
     async function fetchData() {
       setLoading(true)
       const { inicio, fim } = periodoParaDatas(periodo)
-      const { data } = await supabase.from('registros').select('*')
-        .gte('data', inicio).lte('data', fim)
-      setRegistros((data as Registro[]) ?? [])
+      const data = await fetchRegistros(inicio, fim)
+      setRegistros(data)
       setLoading(false)
     }
     fetchData()

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase, LABEL_EVENTO, COR_EVENTO, type TipoEvento, type Evento } from '@/lib/supabase'
+import { invalidateRegistrosCache } from '@/lib/queryCache'
 import { type SequenciaLigacao, LABEL_SEQUENCIA } from '@/lib/metrics'
 
 type Usuario = 'joao_pedro' | 'atanael'
@@ -254,6 +255,7 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
     const { data: evData } = await supabase.from('eventos').insert(evPayload).select('id').single()
     if (!TIPOS_SOMENTE_EVENTO.includes(tipo)) {
       await supabase.rpc('incrementar_registro', { p_data: data, p_usuario: usuario, p_campo: tipo, p_delta: 1 })
+      invalidateRegistrosCache()
     }
     setSalvando(prev => { const n = new Set(prev); n.delete(tipo); return n })
 
@@ -619,6 +621,7 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
       setErroMsg(error.message)
       setStatus('erro')
     } else {
+      invalidateRegistrosCache()
       setStatus('ok')
       setTimeout(() => setStatus('idle'), 3000)
     }

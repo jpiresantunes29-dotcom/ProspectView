@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import type { Registro } from '@/lib/supabase'
+import { fetchRegistros } from '@/lib/queryCache'
 import { somarRegistros, pct, diasUteis, porDia } from '@/lib/metrics'
 import MetricCard from '@/components/metric-card'
 import { MetricCardSkeleton } from '@/components/skeleton'
@@ -31,11 +31,11 @@ export default function CaptacaoPage() {
       const { inicio, fim } = periodoParaDatas(periodo)
       const { inicio: pInicio, fim: pFim } = periodoAnteriorDatas(periodo)
       const [curr, prev] = await Promise.all([
-        supabase.from('registros').select('*').gte('data', inicio).lte('data', fim).eq('usuario', 'joao_pedro').order('data'),
-        supabase.from('registros').select('*').gte('data', pInicio).lte('data', pFim).eq('usuario', 'joao_pedro').order('data'),
+        fetchRegistros(inicio, fim, 'joao_pedro'),
+        fetchRegistros(pInicio, pFim, 'joao_pedro'),
       ])
-      setRegistros((curr.data as Registro[]) ?? [])
-      setPrevRegistros((prev.data as Registro[]) ?? [])
+      setRegistros(curr)
+      setPrevRegistros(prev)
       setLoading(false)
     }
     fetchData()
