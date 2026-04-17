@@ -35,5 +35,28 @@
       "description": "Auto-commit and push changes every 2 hours",
       "frequency": "every 2 hours"
     }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /d \"C:\\Projetos\\Gestao_Leads\" && git add -A 2>nul & exit 0"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /d \"C:\\Projetos\\Gestao_Leads\" && git diff --cached --quiet 2>nul || (git commit -m \"Auto: session checkpoint\" 2>nul && git push origin main 2>nul) & exit 0"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -2,6 +2,57 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## 🔴 PROTOCOLO OBRIGATÓRIO — Executar após TODA implementação
+
+**Este bloco é de prioridade máxima. Toda vez que uma funcionalidade for implementada, um bug corrigido, ou qualquer alteração feita no projeto, Claude DEVE executar os passos abaixo antes de encerrar a resposta — sem exceção.**
+
+### Passo 1 — Build & verificação
+```bash
+npm run build        # TypeScript + build check. NÃO commit se falhar.
+```
+
+### Passo 2 — Auto-reflexão (registrar no CLAUDE.md)
+Antes de commitar, Claude DEVE responder internamente:
+- **O que foi implementado?** (1-2 frases)
+- **O que poderia ter sido feito diferente?** Exemplos:
+  - Usei mais queries do que o necessário?
+  - Criei código duplicado que deveria ser um componente?
+  - Implementei sem confirmar detalhes visuais com o usuário primeiro?
+  - Poderia ter proposto uma solução mais simples?
+  - Fiz múltiplas rodadas quando podia ter sido uma?
+- **Lição para o futuro** (1 frase acionável)
+
+Adicionar à seção `## Lab Notes 🔬` do CLAUDE.md quando houver aprendizado relevante.
+
+### Passo 3 — Commit + Push + Deploy
+```bash
+git add .
+git commit -m "Tipo: Descrição clara do que foi feito"
+git push origin main     # o post-commit hook faz o push automaticamente
+vercel --prod            # SEMPRE fazer deploy após push
+```
+
+### Passo 4 — Confirmar ao usuário
+Responder ao usuário com:
+- ✅ O que foi implementado
+- 🔗 URL do Vercel se houve deploy
+- 💡 O que poderia ter sido feito melhor (1-2 pontos da auto-reflexão)
+
+---
+
+## 🟡 REGRAS DE EFICIÊNCIA — Reduzir tokens e retrabalho
+
+1. **Medir antes de otimizar** — antes de qualquer melhoria de performance, medir o problema real (Network tab, console.time). Não assumir.
+2. **Confirmar direção visual antes de codar** — para mudanças de UI, descrever textualmente o que será feito e esperar aprovação. Para bugs/lógica, implementar direto.
+3. **Planejar completo antes de implementar** — quando o usuário reporta um problema (ex: "site lento", "usuário confuso"), levantar TODAS as causas possíveis antes de codar. Evita múltiplas rodadas.
+4. **Extrair componentes na primeira duplicação** — se o mesmo padrão aparece pela segunda vez, criar componente reutilizável.
+5. **Uma sessão = uma entrega completa** — não deixar metade no ar. Se iniciou um feature, terminar com build ✅ + commit + push + deploy.
+6. **Verificar Vercel após todo push** — nunca assumir que integração GitHub está ativa. Após push, confirmar com `vercel ls` se o deploy disparou. Se não, rodar `vercel --prod` na hora.
+
+---
+
 ## Project Overview
 
 ### What is ProspectView?
