@@ -10,6 +10,7 @@ import FiltroPeriodo, { periodoParaDatas, periodoAnteriorDatas, type Periodo } f
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import AnimatedTitle from '@/components/animated-title'
 import { getMetas, type Metas } from '@/lib/metas'
+import FirstVisitGuide from '@/components/first-visit-guide'
 
 const BORDER = '1px solid #3D3D3D'
 const MUTED = '#9E9E9E'
@@ -63,6 +64,7 @@ export default function DashboardPage() {
 
   return (
     <div>
+      <FirstVisitGuide />
       {/* Header da página */}
       <div style={{
         display: 'flex',

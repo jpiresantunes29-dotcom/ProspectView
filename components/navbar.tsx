@@ -9,11 +9,11 @@ import { prefetchPage } from '@/lib/queryCache'
 
 // Links principais — sempre visíveis na navbar (sem scroll)
 const mainLinks = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/funil', label: 'Funil' },
-  { href: '/captacao', label: 'Captação' },
-  { href: '/contato', label: 'Contato' },
-  { href: '/historico', label: 'Histórico' },
+  { href: '/',          label: 'Dashboard', tip: 'Visão geral dos dois usuários' },
+  { href: '/funil',     label: 'Funil',     tip: 'Pipeline completo com taxas de conversão' },
+  { href: '/captacao',  label: 'Captação',  tip: 'Métricas de prospecção — João Pedro' },
+  { href: '/contato',   label: 'Contato',   tip: 'Métricas comerciais — Atanael' },
+  { href: '/historico', label: 'Histórico', tip: 'Todos os registros por data' },
 ]
 
 // Links secundários — ficam no drawer (hamburguer)
@@ -187,29 +187,54 @@ export default function Navbar() {
             {mainLinks.map((link, i) => {
               const isActive = pathname === link.href
               return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  ref={(el) => { linkRefs.current[i] = el }}
-                  style={{
-                    position: 'relative',
-                    padding: '0 10px',
-                    height: '48px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.7rem',
-                    fontWeight: isActive ? 600 : 400,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
-                    textDecoration: 'none',
-                    transition: 'color 0.1s ease',
-                    whiteSpace: 'nowrap',
-                  }}
-                  onMouseEnter={() => prefetchPage(link.href)}
-                >
-                  {link.label}
-                </Link>
+                <div key={link.href} style={{ position: 'relative' }} className="nav-tip-wrap">
+                  <Link
+                    href={link.href}
+                    ref={(el) => { linkRefs.current[i] = el }}
+                    style={{
+                      position: 'relative',
+                      padding: '0 10px',
+                      height: '48px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '0.7rem',
+                      fontWeight: isActive ? 600 : 400,
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      textDecoration: 'none',
+                      transition: 'color 0.1s ease',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={() => prefetchPage(link.href)}
+                  >
+                    {link.label}
+                  </Link>
+                  {link.tip && (
+                    <div className="nav-tip-box" style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 4px)',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: '#1A1A1A',
+                      border: '1px solid #2E2E2E',
+                      borderRadius: '4px',
+                      padding: '5px 10px',
+                      fontSize: '0.65rem',
+                      color: '#BDBDBD',
+                      whiteSpace: 'nowrap',
+                      pointerEvents: 'none',
+                      opacity: 0,
+                      transition: 'opacity 0.15s ease',
+                      zIndex: 100,
+                      fontWeight: 400,
+                      letterSpacing: '0.01em',
+                      textTransform: 'none',
+                    }}>
+                      {link.tip}
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>

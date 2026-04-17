@@ -190,6 +190,11 @@ input[type=number]::-webkit-outer-spin-button {
   opacity: 1 !important;
 }
 
+/* Tooltip dos links da navbar */
+.nav-tip-wrap:hover .nav-tip-box {
+  opacity: 1 !important;
+}
+
 /* Scrollbar customizada */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--background); }
