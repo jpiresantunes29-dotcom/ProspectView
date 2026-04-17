@@ -647,18 +647,48 @@ All code changes are tracked, committed, and synchronized with the remote reposi
 
 ### Automated commit strategy
 
-**IMPORTANT: Automatic commits are triggered when:**
+**IMPORTANT: Automatic commits are triggered in two ways:**
+
+#### 1. **On-Demand Automatic Commits** (Manual triggers)
+Triggered when:
 - ✅ A feature is completed and working
 - ✅ You write "checkpoint" in a message
 - ✅ You explicitly request it
 - ✅ After significant code changes (components, pages, logic)
 
-**AUTOMATIC WORKFLOW TRIGGERED:**
+**AUTOMATIC WORKFLOW:**
 1. `git add .` — Stage all changes (respecting .gitignore)
 2. Create commit with descriptive message summarizing changes
 3. `git push origin main` — Push to GitHub immediately
 
-This ensures the remote repository stays in sync with local work and maintains a clean commit history.
+#### 2. **Scheduled Automatic Commits** (Every 2 hours)
+A background scheduled task runs every 2 hours to:
+1. Check for important changes in the working directory
+2. Filter out unimportant files (node_modules, .next, .env.local, logs, OS files)
+3. Commit only important changes:
+   - `app/`, `components/`, `lib/` directories
+   - Configuration files (*.json)
+   - Documentation (*.md)
+   - TypeScript files (*.ts, *.tsx)
+4. Automatically push to `origin/main` if changes were committed
+
+**Files that are NEVER committed (protected by .gitignore):**
+- ❌ `node_modules/` — dependencies (reinstalled on npm install)
+- ❌ `.next/` — build cache (auto-generated)
+- ❌ `.env.local` — credentials (never uploaded)
+- ❌ `*.log` — temporary logs
+- ❌ `.vercel/`, `.vscode/` — generated configs
+- ❌ OS files (`Thumbs.db`, `.DS_Store`)
+
+**You don't need to do anything!** — Changes are automatically detected, filtered, and pushed to GitHub on schedule.
+
+**Status of scheduled task:**
+- ✅ Enabled: `auto-commit-github`
+- ⏱️ Frequency: Every 2 hours
+- 📍 Location: `.claude/scheduled-tasks/auto-commit-github/SKILL.md`
+- 🔔 Notifications: Enabled (you'll see results in the sidebar)
+
+This ensures the remote repository stays in sync with local work and maintains a clean, organized commit history.
 
 ### Standard synchronization process
 
