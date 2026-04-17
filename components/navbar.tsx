@@ -18,7 +18,6 @@ const mainLinks = [
 // Links secundários — ficam no drawer (hamburguer)
 const drawerLinks = [
   { href: '/metas', label: 'Metas' },
-  { href: '/quick-log', label: 'Quick Log' },
   { href: '/metricas-tier', label: 'Métricas TIER' },
   { href: '/diagnostico', label: 'Diagnóstico' },
 ]
