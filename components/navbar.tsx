@@ -65,7 +65,7 @@ const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const linkRefs = useRef<(HTMLAnchorElement | null)[]>([])
+  const linkRefs = useRef<(HTMLDivElement | null)[]>([])
   const [indicator, setIndicator] = useState({ left: 0, width: 0, ready: false })
   const [registradoHoje, setRegistradoHoje] = useState({ joao: false, atanael: false })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -137,8 +137,8 @@ export default function Navbar() {
           gap: '1rem',
         }}>
 
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', flexShrink: 0 }}>
+          {/* Logo — clique recarrega e volta para home */}
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '9px', flexShrink: 0, textDecoration: 'none' }}>
             <div style={{
               width: '24px',
               height: '24px',
@@ -165,7 +165,7 @@ export default function Navbar() {
             }}>
               ProspectView
             </span>
-          </div>
+          </a>
 
           {/* Divisor vertical */}
           <div style={{ width: '1px', height: '18px', background: 'var(--border)', flexShrink: 0 }} />
@@ -187,10 +187,10 @@ export default function Navbar() {
             {mainLinks.map((link, i) => {
               const isActive = pathname === link.href
               return (
-                <div key={link.href} style={{ position: 'relative' }} className="nav-tip-wrap">
+                <div key={link.href} style={{ position: 'relative' }} className="nav-tip-wrap"
+                  ref={(el) => { linkRefs.current[i] = el }}>
                   <Link
                     href={link.href}
-                    ref={(el) => { linkRefs.current[i] = el }}
                     style={{
                       position: 'relative',
                       padding: '0 10px',
