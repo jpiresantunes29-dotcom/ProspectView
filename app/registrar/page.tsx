@@ -136,11 +136,65 @@ export default function RegistrarPage() {
         </div>
       </div>
 
-      {/* Conteúdo do modo */}
-      {modo === 'rapido'
-        ? <ModoRapido  usuario={usuario} />
-        : <ModoManual  usuario={usuario} />
-      }
+      {/* Atanael usa a página /contato para registrar atividades */}
+      {usuario === 'atanael' ? (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1rem',
+          padding: '3rem 2rem',
+          textAlign: 'center',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '6px',
+        }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: 'rgba(45,184,129,0.1)',
+            border: '1px solid rgba(45,184,129,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2DB881" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12"/>
+              <path d="M2 2l20 20"/>
+            </svg>
+          </div>
+          <div>
+            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)', marginBottom: '0.35rem', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+              Atanael registra na página Contato
+            </p>
+            <p style={{ fontSize: '0.72rem', color: 'var(--muted-foreground)', lineHeight: 1.5, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+              Use o wizard de atividades para registrar cold calls,<br />
+              agendamentos, follow-ups e muito mais.
+            </p>
+          </div>
+          <a
+            href="/contato"
+            style={{
+              padding: '0.75rem 1.75rem',
+              background: '#2DB881',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              cursor: 'pointer',
+              fontFamily: "'Segoe UI', system-ui, sans-serif",
+            }}
+          >
+            Ir para Contato →
+          </a>
+        </div>
+      ) : modo === 'rapido' ? (
+        <ModoRapido  usuario={usuario} />
+      ) : (
+        <ModoManual  usuario={usuario} />
+      )}
     </div>
   )
 }

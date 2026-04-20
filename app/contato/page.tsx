@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  type TipoAtividade, type StatusContato,
+  type TipoAtividade, type StatusContato, type Atividade,
   LABEL_ATIVIDADE, COR_ATIVIDADE, LABEL_STATUS,
 } from '@/lib/supabase'
 import AnimatedTitle from '@/components/animated-title'
@@ -11,7 +11,8 @@ import AnimatedTitle from '@/components/animated-title'
 const BORDER = '1px solid var(--border)'
 const SURFACE = 'var(--surface)'
 
-type Step = 'idle' | 'tier' | 'tipo' | 'status' | 'tentativa' | 'salvando' | 'ok'
+// Step machine: tentativa BEFORE status (new order)
+type Step = 'idle' | 'tier' | 'tipo' | 'tentativa' | 'status' | 'salvando' | 'ok'
 
 const ATIVIDADES: TipoAtividade[] = [
   'cold_call', 'whatsapp', 'agendamento_reuniao', 'follow_up',
@@ -22,50 +23,28 @@ const STATUS_OPCOES: StatusContato[] = ['atendeu_normal', 'atendeu_ocupado', 'na
 
 function hoje() { return new Date().toISOString().slice(0, 10) }
 
-function precisaStatus(tipo: TipoAtividade) {
-  return tipo === 'cold_call'
+function fmtData(iso: string) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+function fmtHora(iso: string) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function ContatoPage() {
-  const [step, setStep]               = useState<Step>('idle')
-  const [tier, setTier]               = useState<number | null>(null)
-  const [tipo, setTipo]               = useState<TipoAtividade | null>(null)
-  const [status, setStatus]           = useState<StatusContato | null>(null)
-  const [tentativa, setTentativa]     = useState<number>(1)
-  const [erro, setErro]               = useState('')
+  const [step, setStep]           = useState<Step>('idle')
+  const [tier, setTier]           = useState<number | null>(null)
+  const [tipo, setTipo]           = useState<TipoAtividade | null>(null)
+  const [tentativa, setTentativa] = useState<number>(1)
+  const [erro, setErro]           = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
 
   function reset() {
     setStep('idle'); setTier(null); setTipo(null)
-    setStatus(null); setTentativa(1); setErro('')
+    setTentativa(1); setErro('')
   }
 
-  async function salvar() {
-    if (!tier || !tipo) return
-    setStep('salvando')
-    setErro('')
-
-    const payload: Record<string, unknown> = {
-      data: hoje(),
-      usuario: 'atanael',
-      tier,
-      tipo_atividade: tipo,
-      status_contato: precisaStatus(tipo) ? status : null,
-      tentativa: tipo === 'cold_call' ? tentativa : null,
-    }
-
-    const { error } = await supabase.from('atividades').insert(payload)
-    if (error) { setErro(error.message); setStep('tentativa'); return }
-    setStep('ok')
-  }
-
-  // ─── Passo atual ────────────────────────────────────────────────────────────
-
-  function escolherTipo(t: TipoAtividade) {
-    setTipo(t)
-    if (precisaStatus(t)) setStep('status')  // cold_call → status → tentativa
-    else salvarDireto(t)
-  }
-
+  // ─── Non-cold_call: save directly ───────────────────────────────────────────
   async function salvarDireto(t: TipoAtividade) {
     if (!tier) return
     setStep('salvando')
@@ -74,16 +53,42 @@ export default function ContatoPage() {
       tipo_atividade: t, status_contato: null, tentativa: null,
     })
     if (error) { setErro(error.message); setStep('tipo'); return }
+    setRefreshKey(k => k + 1)
     setStep('ok')
   }
 
+  // ─── Cold call: save with tentativa + status ─────────────────────────────────
+  async function salvarColdCall(s: StatusContato) {
+    if (!tier || !tipo) return
+    setStep('salvando')
+    const { error } = await supabase.from('atividades').insert({
+      data: hoje(), usuario: 'atanael', tier,
+      tipo_atividade: tipo,
+      status_contato: s,
+      tentativa,
+    })
+    if (error) { setErro(error.message); setStep('status'); return }
+    setRefreshKey(k => k + 1)
+    setStep('ok')
+  }
+
+  // ─── Step handlers ───────────────────────────────────────────────────────────
+  function escolherTipo(t: TipoAtividade) {
+    setTipo(t)
+    if (t === 'cold_call') setStep('tentativa')
+    else salvarDireto(t)
+  }
+
+  function escolherTentativa(n: number) {
+    setTentativa(n)
+    setStep('status')
+  }
+
   function escolherStatus(s: StatusContato) {
-    setStatus(s)
-    setStep('tentativa')
+    salvarColdCall(s)
   }
 
   // ─── UI helpers ─────────────────────────────────────────────────────────────
-
   const cardStyle: React.CSSProperties = {
     maxWidth: '520px',
     margin: '0 auto',
@@ -142,7 +147,6 @@ export default function ContatoPage() {
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────────
-
   return (
     <div>
       <div style={{ marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: BORDER }}>
@@ -178,9 +182,9 @@ export default function ContatoPage() {
       {/* STEP 1 — Tier */}
       {step === 'tier' && (
         <div style={cardStyle}>
-          <Progresso atual={0} total={3} />
+          <Progresso atual={0} total={4} />
           <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
-            Etapa 1 de 3
+            Etapa 1 de 4
           </p>
           <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
             Qual é o Tier do contato?
@@ -209,9 +213,9 @@ export default function ContatoPage() {
       {step === 'tipo' && (
         <div style={cardStyle}>
           <Voltar onClick={() => setStep('tier')} />
-          <Progresso atual={1} total={3} />
+          <Progresso atual={1} total={4} />
           <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
-            Etapa 2 de 3 — Tier {tier}
+            Etapa 2 de 4 — Tier {tier}
           </p>
           <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
             Qual atividade foi realizada?
@@ -224,55 +228,27 @@ export default function ContatoPage() {
               >
                 <Dot color={COR_ATIVIDADE[t]} />
                 {LABEL_ATIVIDADE[t]}
-                {t === 'cold_call' && <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--muted-foreground)' }}>registra tentativa</span>}
+                {t === 'cold_call' && <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--muted-foreground)' }}>tentativa + status</span>}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* STEP 3 — Status do contato (só cold call) */}
-      {step === 'status' && (
-        <div style={cardStyle}>
-          <Voltar onClick={() => setStep('tipo')} />
-          <Progresso atual={2} total={3} />
-          <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
-            Etapa 3 de 3 — Tier {tier} · {tipo && LABEL_ATIVIDADE[tipo]}
-          </p>
-          <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
-            Como foi o contato?
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {STATUS_OPCOES.map((s) => {
-              const cor = s === 'atendeu_normal' ? '#34D399' : s === 'atendeu_ocupado' ? '#FBBF24' : '#F87171'
-              return (
-                <button key={s} onClick={() => escolherStatus(s)} style={btnBase}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = cor; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
-                >
-                  <Dot color={cor} />
-                  {LABEL_STATUS[s]}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* STEP 4 — Tentativa (só cold call) */}
+      {/* STEP 3 — Número da tentativa (cold call) */}
       {step === 'tentativa' && (
         <div style={cardStyle}>
-          <Voltar onClick={() => setStep(precisaStatus(tipo!) ? 'status' : 'tipo')} />
-          <Progresso atual={3} total={3} />
+          <Voltar onClick={() => setStep('tipo')} />
+          <Progresso atual={2} total={4} />
           <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
-            Etapa 3 de 3 — Tier {tier} · Cold Call
+            Etapa 3 de 4 — Tier {tier} · Cold Call
           </p>
           <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
             Qual é o número da tentativa?
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
             {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-              <button key={n} onClick={() => setTentativa(n)} style={{
+              <button key={n} onClick={() => escolherTentativa(n)} style={{
                 ...btnBase,
                 justifyContent: 'center',
                 textAlign: 'center',
@@ -290,16 +266,35 @@ export default function ContatoPage() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* STEP 4 — Como foi o contato (cold call) */}
+      {step === 'status' && (
+        <div style={cardStyle}>
+          <Voltar onClick={() => setStep('tentativa')} />
+          <Progresso atual={3} total={4} />
+          <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
+            Etapa 4 de 4 — Tier {tier} · Tentativa {tentativa}
+          </p>
+          <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
+            Como foi o contato?
+          </p>
           {erro && <p style={{ fontSize: '0.72rem', color: '#F87171', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(248,113,113,0.08)', borderRadius: '4px', border: '1px solid rgba(248,113,113,0.2)' }}>{erro}</p>}
-          <button onClick={salvar} style={{
-            width: '100%', padding: '0.875rem',
-            background: '#0078D4', color: '#fff', border: 'none',
-            borderRadius: '4px', fontSize: '0.78rem', fontWeight: 700,
-            letterSpacing: '0.04em', textTransform: 'uppercase',
-            cursor: 'pointer', fontFamily: "'Segoe UI', system-ui, sans-serif",
-          }}>
-            Confirmar registro
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {STATUS_OPCOES.map((s) => {
+              const cor = s === 'atendeu_normal' ? '#34D399' : s === 'atendeu_ocupado' ? '#FBBF24' : '#F87171'
+              return (
+                <button key={s} onClick={() => escolherStatus(s)} style={btnBase}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = cor; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
+                >
+                  <Dot color={cor} />
+                  {LABEL_STATUS[s]}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -321,7 +316,6 @@ export default function ContatoPage() {
           <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--foreground)', marginBottom: '0.5rem' }}>Atividade registrada</p>
           <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '2rem' }}>
             {tipo && LABEL_ATIVIDADE[tipo]} · Tier {tier}
-            {tentativa && tipo === 'cold_call' ? ` · Tentativa ${tentativa}` : ''}
           </p>
           <button onClick={reset} style={{
             padding: '0.75rem 2rem', background: '#0078D4', color: '#fff',
@@ -333,6 +327,146 @@ export default function ContatoPage() {
           </button>
         </div>
       )}
+
+      {/* ─── Histórico ───────────────────────────────────────────────── */}
+      <HistoricoAtividades refreshKey={refreshKey} />
+    </div>
+  )
+}
+
+// ─── Componente de histórico ──────────────────────────────────────────────────
+
+function HistoricoAtividades({ refreshKey }: { refreshKey: number }) {
+  const [atividades, setAtividades] = useState<Atividade[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [confirmId, setConfirmId]   = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      const { data } = await supabase
+        .from('atividades')
+        .select('*')
+        .eq('usuario', 'atanael')
+        .order('criado_em', { ascending: false })
+        .limit(50)
+      if (!cancelled && data) setAtividades(data as Atividade[])
+      if (!cancelled) setLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
+  }, [refreshKey])
+
+  async function deletar(id: string) {
+    setConfirmId(null)
+    setAtividades(prev => prev.filter(a => a.id !== id))
+    await supabase.from('atividades').delete().eq('id', id)
+  }
+
+  if (loading) return (
+    <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
+      <p style={{ fontSize: '0.65rem', color: 'var(--muted-foreground)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Histórico</p>
+    </div>
+  )
+
+  if (atividades.length === 0) return null
+
+  return (
+    <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
+      <p style={{
+        fontSize: '0.65rem',
+        fontWeight: 600,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        color: 'var(--muted-foreground)',
+        marginBottom: '1rem',
+      }}>
+        Histórico — {atividades.length} registro{atividades.length !== 1 ? 's' : ''}
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        {atividades.map((a) => {
+          const cor = COR_ATIVIDADE[a.tipo_atividade]
+          const isConf = confirmId === a.id
+          return (
+            <div
+              key={a.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.6rem 0.75rem',
+                background: isConf ? 'rgba(248,113,113,0.06)' : 'var(--surface)',
+                border: `1px solid ${isConf ? 'rgba(248,113,113,0.3)' : 'var(--border)'}`,
+                borderRadius: '4px',
+                transition: 'background 0.12s, border-color 0.12s',
+              }}
+            >
+              {/* Dot */}
+              <span style={{
+                width: 7, height: 7, borderRadius: '50%',
+                background: cor, flexShrink: 0,
+                display: 'inline-block',
+              }} />
+
+              {/* Atividade + extras */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--foreground)', fontWeight: 500, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+                  {LABEL_ATIVIDADE[a.tipo_atividade]}
+                </span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--muted-foreground)', marginLeft: '0.4rem' }}>
+                  · T{a.tier}
+                  {a.tentativa != null && ` · T${a.tentativa}ª`}
+                  {a.status_contato && ` · ${LABEL_STATUS[a.status_contato]}`}
+                </span>
+              </div>
+
+              {/* Data + hora */}
+              <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums' }}>
+                  {fmtData(a.data)}
+                </div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--muted-foreground)', opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>
+                  {fmtHora(a.criado_em)}
+                </div>
+              </div>
+
+              {/* Ação de exclusão */}
+              {isConf ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+                  <button onClick={() => deletar(a.id)} style={{
+                    padding: '2px 8px', fontSize: '0.65rem', fontWeight: 700,
+                    background: '#F87171', color: '#fff', border: 'none',
+                    borderRadius: '3px', cursor: 'pointer',
+                  }}>Sim</button>
+                  <button onClick={() => setConfirmId(null)} style={{
+                    padding: '2px 8px', fontSize: '0.65rem',
+                    background: 'transparent', color: 'var(--muted-foreground)',
+                    border: '1px solid var(--border)', borderRadius: '3px', cursor: 'pointer',
+                  }}>Não</button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmId(a.id)}
+                  title="Excluir"
+                  style={{
+                    width: 20, height: 20, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'transparent', border: '1px solid var(--border)',
+                    color: 'var(--muted-foreground)', fontSize: '0.65rem',
+                    cursor: 'pointer', flexShrink: 0, transition: 'all 0.12s',
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; e.currentTarget.style.borderColor = '#F87171'; e.currentTarget.style.color = '#F87171' }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted-foreground)' }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
