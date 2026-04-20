@@ -4,28 +4,37 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Registro } from '@/lib/supabase'
 import AnimatedTitle from '@/components/animated-title'
-import { Skeleton } from '@/components/skeleton'
 
-const BORDER = '1px solid #1F1F1F'
+const BORDER = '1px solid var(--border)'
 
-const COLS: { key: keyof Registro | 'usuario_label'; header: string }[] = [
-  { key: 'data', header: 'Data' },
-  { key: 'usuario_label', header: 'Usuário' },
-  { key: 'empresas_encontradas', header: 'Emp.' },
-  { key: 'leads_qualificados', header: 'Qualif.' },
-  { key: 'leads_enviados_crm', header: 'CRM' },
-  { key: 'leads_contatados', header: 'Contat.' },
-  { key: 'respostas', header: 'Resp.' },
-  { key: 'interessados', header: 'Interes.' },
-  { key: 'reunioes_marcadas', header: 'Reun.' },
-  { key: 'oportunidades', header: 'Opor.' },
-]
+function fmtData(iso: string) {
+  return new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  })
+}
+
+type Chip = { label: string; value: number; color: string }
+
+function chipsJP(r: Registro): Chip[] {
+  return [
+    { label: 'Emp',   value: r.empresas_encontradas, color: '#4DA3F7' },
+    { label: 'Qual',  value: r.leads_qualificados,   color: '#4DA3F7' },
+    { label: 'CRM',   value: r.leads_enviados_crm,   color: '#4DA3F7' },
+  ]
+}
+
+function chipsAT(r: Registro): Chip[] {
+  return [
+    { label: 'Cont',  value: r.leads_contatados,  color: '#2DB881' },
+    { label: 'Resp',  value: r.respostas,          color: '#2DB881' },
+    { label: 'Reun',  value: r.reunioes_marcadas,  color: '#2DB881' },
+  ]
+}
 
 export default function HistoricoPage() {
-  const [registros, setRegistros] = useState<Registro[]>([])
-  const [loading, setLoading] = useState(true)
-  const [confirmando, setConfirmando] = useState<string | null>(null)
-  const [excluindo, setExcluindo] = useState<string | null>(null)
+  const [registros, setRegistros]   = useState<Registro[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [confirmId, setConfirmId]   = useState<string | null>(null)
 
   useEffect(() => {
     supabase
@@ -38,167 +47,132 @@ export default function HistoricoPage() {
       })
   }, [])
 
-  async function handleExcluir(id: string) {
-    setExcluindo(id)
-    const { error } = await supabase.from('registros').delete().eq('id', id)
-    if (!error) {
-      setRegistros((prev) => prev.filter((r) => r.id !== id))
-    }
-    setExcluindo(null)
-    setConfirmando(null)
+  async function excluir(id: string) {
+    setConfirmId(null)
+    setRegistros(prev => prev.filter(r => r.id !== id))
+    await supabase.from('registros').delete().eq('id', id)
   }
+
+  const isJP = (r: Registro) => r.usuario === 'joao_pedro'
 
   return (
     <div>
-      <div style={{ marginBottom: '3rem', paddingBottom: '2rem', borderBottom: BORDER }}>
-        <p className="section-label" style={{ marginBottom: '0.75rem' }}>Todos os registros</p>
+      <div style={{ marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: BORDER }}>
+        <p className="section-label" style={{ marginBottom: '0.5rem' }}>Todos os registros</p>
         <AnimatedTitle text="Histórico" />
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} h="2.5rem" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ height: '52px', background: 'var(--surface)', border: BORDER, borderRadius: '4px' }} />
           ))}
         </div>
       ) : registros.length === 0 ? (
-        <p style={{ color: '#6B7280', fontSize: '0.8rem' }}>Nenhum registro encontrado.</p>
+        <p style={{ fontSize: '0.78rem', color: 'var(--muted-foreground)' }}>Nenhum registro encontrado.</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
-            <thead>
-              <tr>
-                {COLS.map(({ key, header }) => (
-                  <th
-                    key={key}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {registros.map((r) => {
+            const jp    = isJP(r)
+            const cor   = jp ? '#4DA3F7' : '#2DB881'
+            const nome  = jp ? 'João Pedro' : 'Atanael'
+            const chips = jp ? chipsJP(r) : chipsAT(r)
+            const isConf = confirmId === r.id
+
+            return (
+              <div
+                key={r.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.65rem 0.875rem',
+                  background: isConf ? 'rgba(248,113,113,0.05)' : 'var(--surface)',
+                  border: `1px solid ${isConf ? 'rgba(248,113,113,0.3)' : 'var(--border)'}`,
+                  borderRadius: '4px',
+                  transition: 'border-color 0.12s',
+                }}
+              >
+                {/* Data */}
+                <span style={{
+                  fontSize: '0.72rem',
+                  color: 'var(--muted-foreground)',
+                  fontVariantNumeric: 'tabular-nums',
+                  flexShrink: 0,
+                  minWidth: '72px',
+                }}>
+                  {fmtData(r.data)}
+                </span>
+
+                {/* Usuário */}
+                <span style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: cor,
+                  flexShrink: 0,
+                  minWidth: '80px',
+                }}>
+                  {nome}
+                </span>
+
+                {/* Chips de métricas */}
+                <div style={{ display: 'flex', gap: '6px', flex: 1, flexWrap: 'wrap' }}>
+                  {chips.map(({ label, value }) => (
+                    <span key={label} style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 600,
+                      color: value > 0 ? cor : 'var(--muted-foreground)',
+                      background: value > 0 ? `${cor}14` : 'transparent',
+                      border: `1px solid ${value > 0 ? `${cor}30` : 'var(--border)'}`,
+                      borderRadius: '3px',
+                      padding: '2px 7px',
+                      fontVariantNumeric: 'tabular-nums',
+                      fontFamily: "'Segoe UI', system-ui, sans-serif",
+                      opacity: value === 0 ? 0.45 : 1,
+                    }}>
+                      {label} {value}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Ação excluir */}
+                {isConf ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '0.65rem', color: '#F87171' }}>Excluir?</span>
+                    <button onClick={() => excluir(r.id)} style={{
+                      padding: '2px 10px', fontSize: '0.65rem', fontWeight: 700,
+                      background: '#F87171', color: '#fff', border: 'none',
+                      borderRadius: '3px', cursor: 'pointer',
+                    }}>Sim</button>
+                    <button onClick={() => setConfirmId(null)} style={{
+                      padding: '2px 10px', fontSize: '0.65rem',
+                      background: 'transparent', color: 'var(--muted-foreground)',
+                      border: '1px solid var(--border)', borderRadius: '3px', cursor: 'pointer',
+                    }}>Não</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmId(r.id)}
+                    title="Excluir"
                     style={{
-                      padding: '0.5rem 0.75rem',
-                      textAlign: key === 'data' || key === 'usuario_label' ? 'left' : 'right',
-                      color: '#6B7280',
-                      fontWeight: 500,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      fontSize: '0.58rem',
-                      borderBottom: BORDER,
-                      whiteSpace: 'nowrap',
+                      width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'transparent', border: '1px solid var(--border)',
+                      color: 'var(--muted-foreground)', fontSize: '0.65rem',
+                      cursor: 'pointer', transition: 'all 0.12s',
                     }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; e.currentTarget.style.borderColor = '#F87171'; e.currentTarget.style.color = '#F87171' }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted-foreground)' }}
                   >
-                    {header}
-                  </th>
-                ))}
-                <th style={{ borderBottom: BORDER, width: '2rem' }} />
-              </tr>
-            </thead>
-            <tbody>
-              {registros.map((r) => {
-                const isConfirmando = confirmando === r.id
-                const isExcluindo = excluindo === r.id
+                    ×
+                  </button>
+                )}
+              </div>
+            )
+          })}
 
-                if (isConfirmando) {
-                  return (
-                    <tr key={r.id} style={{ borderBottom: '1px solid #141414', background: '#1a0a0a' }}>
-                      <td colSpan={COLS.length + 1} style={{ padding: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <span style={{ fontSize: '0.72rem', color: '#F87171' }}>
-                            Excluir registro de {r.data} ({r.usuario === 'joao_pedro' ? 'João Pedro' : 'Atanael'})?
-                          </span>
-                          <button
-                            onClick={() => handleExcluir(r.id)}
-                            disabled={isExcluindo}
-                            style={{
-                              padding: '0.3rem 0.75rem',
-                              fontSize: '0.68rem',
-                              fontWeight: 500,
-                              letterSpacing: '0.05em',
-                              textTransform: 'uppercase',
-                              background: '#7f1d1d',
-                              color: '#FCA5A5',
-                              border: '1px solid #991b1b',
-                              borderRadius: '3px',
-                              cursor: isExcluindo ? 'wait' : 'pointer',
-                              opacity: isExcluindo ? 0.6 : 1,
-                            }}
-                          >
-                            {isExcluindo ? 'Excluindo...' : 'Confirmar'}
-                          </button>
-                          <button
-                            onClick={() => setConfirmando(null)}
-                            disabled={isExcluindo}
-                            style={{
-                              padding: '0.3rem 0.75rem',
-                              fontSize: '0.68rem',
-                              fontWeight: 500,
-                              letterSpacing: '0.05em',
-                              textTransform: 'uppercase',
-                              background: 'transparent',
-                              color: '#6B7280',
-                              border: '1px solid #2A2A2A',
-                              borderRadius: '3px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                }
-
-                return (
-                  <tr
-                    key={r.id}
-                    className="historico-row"
-                    style={{ borderBottom: '1px solid #141414', transition: 'background 0.15s' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#111111'
-                      const btn = e.currentTarget.querySelector<HTMLElement>('.delete-btn')
-                      if (btn) btn.style.opacity = '1'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent'
-                      const btn = e.currentTarget.querySelector<HTMLElement>('.delete-btn')
-                      if (btn) btn.style.opacity = '0'
-                    }}
-                  >
-                    <td style={{ padding: '0.75rem', color: '#9CA3AF', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-                      {r.data}
-                    </td>
-                    <td style={{ padding: '0.75rem', whiteSpace: 'nowrap', color: r.usuario === 'joao_pedro' ? '#60A5FA' : '#34D399' }}>
-                      {r.usuario === 'joao_pedro' ? 'João Pedro' : 'Atanael'}
-                    </td>
-                    {(['empresas_encontradas', 'leads_qualificados', 'leads_enviados_crm', 'leads_contatados', 'respostas', 'interessados', 'reunioes_marcadas', 'oportunidades'] as (keyof Registro)[]).map((k) => (
-                      <td key={k} style={{ padding: '0.75rem', textAlign: 'right', color: '#FAFAF9', fontVariantNumeric: 'tabular-nums' }}>
-                        {(r[k] as number) || 0}
-                      </td>
-                    ))}
-                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>
-                      <button
-                        className="delete-btn"
-                        onClick={() => setConfirmando(r.id)}
-                        title="Excluir registro"
-                        style={{
-                          opacity: 0,
-                          transition: 'opacity 0.15s',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '0.1rem 0.25rem',
-                          color: '#6B7280',
-                          fontSize: '0.85rem',
-                          lineHeight: 1,
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          <p style={{ fontSize: '0.65rem', color: '#4B5563', marginTop: '1.5rem' }}>
-            {registros.length} registros · Para editar, vá em Registrar e selecione a data desejada.
+          <p style={{ fontSize: '0.62rem', color: 'var(--muted-foreground)', marginTop: '0.75rem', opacity: 0.6 }}>
+            {registros.length} registro{registros.length !== 1 ? 's' : ''} · Para editar, vá em Registrar e selecione a data.
           </p>
         </div>
       )}
