@@ -85,3 +85,59 @@ export const COR_EVENTO: Record<TipoEvento, string> = {
   reunioes_realizadas:  '#7C3AED',
   negocio_fechado:      '#059669',
 }
+
+// ─── Atividades (novo modelo — página Contato) ────────────────────────────────
+
+export type TipoAtividade =
+  | 'cold_call'
+  | 'whatsapp'
+  | 'agendamento_reuniao'
+  | 'follow_up'
+  | 'proposta'
+  | 'negocio_fechado'
+  | 'reuniao_realizada'
+  | 'reuniao_furada'
+
+export type StatusContato =
+  | 'atendeu_normal'
+  | 'atendeu_ocupado'
+  | 'nao_atendeu'
+
+export type Atividade = {
+  id: string
+  data: string
+  usuario: string
+  tier: number
+  tipo_atividade: TipoAtividade
+  status_contato: StatusContato | null
+  tentativa: number | null
+  criado_em: string
+}
+
+export const LABEL_ATIVIDADE: Record<TipoAtividade, string> = {
+  cold_call:           'Cold Call',
+  whatsapp:            'Mensagem WhatsApp',
+  agendamento_reuniao: 'Agendamento de Reunião',
+  follow_up:           'Follow-up Comercial',
+  proposta:            'Emissão de Proposta',
+  negocio_fechado:     'Fechamento de Negócio',
+  reuniao_realizada:   'Reunião Realizada',
+  reuniao_furada:      'Reunião Furada',
+}
+
+export const COR_ATIVIDADE: Record<TipoAtividade, string> = {
+  cold_call:           '#4DA3F7',
+  whatsapp:            '#25D366',
+  agendamento_reuniao: '#FBBF24',
+  follow_up:           '#A78BFA',
+  proposta:            '#F472B6',
+  negocio_fechado:     '#34D399',
+  reuniao_realizada:   '#2DD4BF',
+  reuniao_furada:      '#F87171',
+}
+
+export const LABEL_STATUS: Record<StatusContato, string> = {
+  atendeu_normal:  'Atendeu — conversa normal',
+  atendeu_ocupado: 'Atendeu — não podia falar',
+  nao_atendeu:     'Não atendeu',
+}

@@ -9,10 +9,9 @@ import { prefetchPage } from '@/lib/queryCache'
 
 // Links principais — sempre visíveis na navbar (sem scroll)
 const mainLinks = [
-  { href: '/',          label: 'Dashboard', tip: 'Visão geral dos dois usuários' },
-  { href: '/funil',     label: 'Funil',     tip: 'Pipeline completo com taxas de conversão' },
+  { href: '/',          label: 'Dashboard', tip: 'Atividades registradas por Atanael' },
   { href: '/captacao',  label: 'Captação',  tip: 'Métricas de prospecção — João Pedro' },
-  { href: '/contato',   label: 'Contato',   tip: 'Métricas comerciais — Atanael' },
+  { href: '/contato',   label: 'Contato',   tip: 'Registro de atividades — Atanael' },
   { href: '/historico', label: 'Histórico', tip: 'Todos os registros por data' },
 ]
 
@@ -65,7 +64,7 @@ const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const linkRefs = useRef<(HTMLDivElement | null)[]>([])
+  const linkRefs = useRef<(HTMLAnchorElement | null)[]>([])
   const [indicator, setIndicator] = useState({ left: 0, width: 0, ready: false })
   const [registradoHoje, setRegistradoHoje] = useState({ joao: false, atanael: false })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -187,10 +186,10 @@ export default function Navbar() {
             {mainLinks.map((link, i) => {
               const isActive = pathname === link.href
               return (
-                <div key={link.href} style={{ position: 'relative' }} className="nav-tip-wrap"
-                  ref={(el) => { linkRefs.current[i] = el }}>
+                <div key={link.href} style={{ position: 'relative' }} className="nav-tip-wrap">
                   <Link
                     href={link.href}
+                    ref={(el) => { linkRefs.current[i] = el }}
                     style={{
                       position: 'relative',
                       padding: '0 10px',
