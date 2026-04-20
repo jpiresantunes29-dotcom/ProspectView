@@ -2118,3 +2118,83 @@ Claude automatically:
 4. No manual link copying needed
 
 This streamlines the development workflow — get the app running and visible in one request.
+
+---
+
+## Sessão de Reestruturação — Abril 2026 (wizard Contato, remoção Funil, Histórico)
+
+### O que foi implementado
+
+- **Wizard de registro** (`/contato`): fluxo guiado em 4 etapas para Atanael registrar atividades na tabela `atividades` (nova). Ordem: Tier → Tipo → Tentativa → Status.
+- **Dashboard simplificado**: gráfico empilhado por `tipo_atividade` com filtros 7d/30d/90d e exportação Excel.
+- **Remoção do Funil**: página removida da navbar, redireciona para `/`.
+- **Histórico simplificado**: substituído tabela densa por lista com chips de métricas.
+- **Registrar → Atanael**: quick-log substituído por card de redirecionamento para `/contato`.
+- **Navbar pill corrigida**: ref movido de `HTMLDivElement` para `HTMLAnchorElement`.
+
+---
+
+### 🔬 Reflexão técnica — O que foi ineficiente
+
+#### 1. 🚫 Tabela SQL implementada DEPOIS do código que a usa
+
+**O que aconteceu:** O wizard do Contato foi codificado, commitado e deployado antes de o usuário criar a tabela `atividades` no Supabase. Resultado: o usuário bateu no erro "Could not find the table 'public.atividades'" em produção, foram necessárias 3 mensagens de vai-e-vem até a tabela ser criada.
+
+**Custo real:** ~2 deploys desnecessários + múltiplas mensagens + frustração do usuário.
+
+**Regra futura:** 🚫 NUNCA implementar código que depende de uma tabela nova sem antes confirmar que ela existe. O fluxo correto é:
+1. Mostrar o SQL ao usuário
+2. Aguardar confirmação "pronto" (ou executar via CLI se tiver acesso)
+3. Só então escrever e deployar o código
+
+---
+
+#### 2. 🚫 Ordem dos steps implementada errada sem validar com o usuário
+
+**O que aconteceu:** Implementei o wizard com a ordem `status → tentativa`. O usuário pediu para inverter para `tentativa → status` após o deploy já estar no ar. Foram necessários um novo ciclo de código + build + commit + deploy para corrigir.
+
+**Custo real:** 1 ciclo completo de implementação desperdiçado.
+
+**Regra futura:** 🚫 Para fluxos com múltiplas etapas sequenciais (wizards, formulários multi-step), sempre descrever a ordem proposta em texto antes de codar — "Vou implementar: Tier → Tipo → Status → Tentativa. Confirma?" — e só implementar após aprovação explícita.
+
+---
+
+#### 3. 🚫 TypeScript dead branch não detectado antes do build
+
+**O que aconteceu:** `escolherTipo` tinha `else if (t === 'cold_call')` após uma condição que já cobria `cold_call`. O TypeScript detectou o erro em tempo de build, mas o código foi escrito com a lógica errada desde o início.
+
+**Custo real:** 1 build quebrado + correção reativa.
+
+**Regra futura:** Antes de submeter qualquer função com ramificação condicional baseada em union types, traçar mentalmente cada branch e verificar se há overlaps ou dead code.
+
+---
+
+#### 4. 🚫 Múltiplos deploys para mudanças relacionadas
+
+**O que aconteceu:** Foram feitos 3 deploys separados para mudanças que eram parte da mesma entrega funcional (dashboard + funil + navbar num commit; wizard reordenado + histórico num segundo; histórico simplificado num terceiro).
+
+**Custo real:** Tempo de build × 3 no Vercel, mais mensagens de confirmação intermediárias.
+
+**Regra futura:** Quando o usuário descreve um conjunto de mudanças relacionadas ("1. página Contato 2. Dashboard 3. remover Funil"), implementar tudo no mesmo ciclo de código → build → commit → deploy, salvo se houver bloqueio externo (ex: SQL pendente).
+
+---
+
+#### 5. ✅ O que funcionou bem
+
+- **`IF NOT EXISTS`** em todo o SQL: zero risco de quebrar ao reexecutar.
+- **Remoção do Funil via `redirect()`**: solução limpa, sem apagar código — rotas antigas continuam funcionando.
+- **`refreshKey`** no histórico do Contato: padrão simples e eficaz para forçar reload após salvar sem WebSocket.
+- **Chips de métricas** no Histórico: decisão de design acertada — reduz cognitive load sem perder informação essencial.
+- **Ref em `HTMLAnchorElement`** para pill da navbar: fix correto, sem gambiarra.
+
+---
+
+### Lições acionáveis para próximas sessões
+
+| # | Situação | Ação correta |
+|---|----------|-------------|
+| 1 | Nova tabela necessária | SQL primeiro, código depois — aguardar "pronto" |
+| 2 | Fluxo multi-step | Descrever ordem em texto, aguardar aprovação |
+| 3 | Union type com branches | Traçar cada caso antes de escrever |
+| 4 | Conjunto de mudanças relacionadas | Um único ciclo build → deploy |
+| 5 | Usuário reclama de página complexa | Perguntar "quais colunas/campos são essenciais?" antes de redesenhar |
