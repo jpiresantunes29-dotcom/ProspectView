@@ -4,6 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 🔵 REGRAS OPERACIONAIS — Vigência permanente
+
+Estas regras se aplicam a **toda e qualquer interação** neste projeto, sem exceção.
+
+### 1. Política de memória do projeto
+
+- **Minimizar leituras de arquivos.** Antes de ler qualquer arquivo, verificar se a informação já está registrada neste CLAUDE.md.
+- Só ler arquivos quando for estritamente necessário para implementar uma modificação.
+- Este arquivo é a **fonte primária de contexto** do projeto.
+- Após cada decisão relevante (arquitetura, estrutura, padrões, mudanças), registrar aqui imediatamente.
+
+### 2. Registro contínuo de memória
+
+Após cada mudança relevante, atualizar este CLAUDE.md com:
+- Decisões arquiteturais tomadas
+- Mudanças estruturais de páginas ou tabelas
+- Padrões que passamos a seguir
+- Anti-patterns identificados
+
+### 3. Política de commits automáticos
+
+- **Todo prompt que resultar em modificação de código gera commit automático + push**, sem esperar solicitação.
+- Mensagem de commit deve ser clara e descritiva.
+- O repositório remoto (GitHub) deve estar sempre sincronizado ao final da resposta.
+
+### 4. Confirmação obrigatória ao final de cada resposta
+
+Toda resposta que envolver modificação deve terminar com:
+
+```
+Memória atualizada: Sim / Não
+Commit criado: Sim / Não
+GitHub sincronizado: Sim / Não
+```
+
+---
+
 ## 🔴 PROTOCOLO OBRIGATÓRIO — Executar após TODA implementação
 
 **Este bloco é de prioridade máxima. Toda vez que uma funcionalidade for implementada, um bug corrigido, ou qualquer alteração feita no projeto, Claude DEVE executar os passos abaixo antes de encerrar a resposta — sem exceção.**
