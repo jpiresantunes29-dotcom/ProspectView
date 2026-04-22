@@ -158,6 +158,14 @@ export default function MetricCard({ label, value, sub, color = 'default', prev,
       {/* Progresso vs meta */}
       {metaTotal !== null && metaPct !== null && (
         <div style={{ marginTop: '0.875rem' }}>
+          <p style={{
+            fontSize: '0.52rem',
+            fontWeight: 600,
+            letterSpacing: '0.07em',
+            textTransform: 'uppercase',
+            color: 'var(--muted-foreground)',
+            marginBottom: '0.35rem',
+          }}>Meta do período</p>
           <div style={{
             height: '2px',
             background: '#3D3D3D',
