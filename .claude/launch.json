@@ -5,7 +5,7 @@
       "name": "prospectview",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "cwd": "C:\\Projetos\\Gestao_Leads\\prospectview",
+      "cwd": "C:\\Projetos\\Gestao_Leads",
       "port": 3000
     }
   ]
