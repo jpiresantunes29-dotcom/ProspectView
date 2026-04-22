@@ -150,7 +150,7 @@ export default function MetricCard({ label, value, sub, color = 'default', prev,
             {deltaSign === 'up' ? '+' : ''}{delta}%
           </span>
           <span style={{ fontSize: '0.6rem', color: '#6B6B6B', fontWeight: 400 }}>
-            vs ant.
+            período anterior
           </span>
         </div>
       )}
