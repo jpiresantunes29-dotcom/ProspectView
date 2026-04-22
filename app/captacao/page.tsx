@@ -59,12 +59,12 @@ export default function CaptacaoPage() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0 2.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0 2.5rem' }}>
           {Array.from({ length: 6 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0 2.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0 2.5rem' }}>
             <MetricCard label="Empresas encontradas" value={t.empresas_encontradas} color="captacao"
               prev={prevT.empresas_encontradas} meta={metas?.empresas_encontradas} dias={dias} />
             <MetricCard label="Leads qualificados" value={t.leads_qualificados} sub={`Taxa: ${pct(t.leads_qualificados, t.empresas_encontradas)}`} color="captacao"

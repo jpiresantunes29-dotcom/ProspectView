@@ -336,7 +336,7 @@ export default function DiagnosticoPage() {
           {/* Métricas do dia */}
           <div style={{ marginBottom: '2rem' }}>
             <p className="section-label" style={{ marginBottom: '1rem' }}>Métricas do dia</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '0.75rem' }}>
               {campos.map(({ tipo, cor }) => (
                 <MetricaDia
                   key={tipo}

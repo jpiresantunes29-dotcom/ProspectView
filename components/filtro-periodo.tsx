@@ -51,22 +51,22 @@ export default function FiltroPeriodo({ value, onChange }: Props) {
     <Select value={value} onValueChange={(v) => onChange(v as Periodo)}>
       <SelectTrigger style={{
         width: '10rem',
-        background: '#0F1A2E',
-        border: '1px solid #1A2D45',
-        color: '#8AAFD0',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        color: 'var(--muted-foreground)',
         fontSize: '0.72rem',
         fontWeight: 500,
         letterSpacing: '0.02em',
-        borderRadius: '4px',
+        borderRadius: 'var(--radius)',
         height: '34px',
       }}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent style={{
-        background: '#0F1A2E',
-        border: '1px solid #1A2D45',
-        color: '#E4ECF7',
-        borderRadius: '4px',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        color: 'var(--foreground)',
+        borderRadius: 'var(--radius)',
       }}>
         <SelectItem value="7d">Últimos 7 dias</SelectItem>
         <SelectItem value="30d">Últimos 30 dias</SelectItem>

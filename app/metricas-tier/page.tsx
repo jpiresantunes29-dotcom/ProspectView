@@ -23,6 +23,13 @@ const TIER_CORES: Record<1 | 2 | 3 | 4, string> = {
   4: '#94A3B8',
 }
 
+function heatmapBg(taxa: string): string {
+  const pct = parseInt(taxa)
+  if (isNaN(pct)) return 'transparent'
+  if (pct <= 50) return `rgba(209,52,56,${((50 - pct) / 50) * 0.18})`
+  return `rgba(52,211,153,${((pct - 50) / 50) * 0.18})`
+}
+
 export default function MetricasTierPage() {
   const [periodo, setPeriodo] = useState<Periodo>('30d')
   const [eventos, setEventos] = useState<Evento[]>([])
@@ -115,7 +122,7 @@ export default function MetricasTierPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '560px' }}>
                 <thead>
                   <tr>
-                    <th style={thStyle()}>TIER</th>
+                    <th style={{ ...thStyle(), position: 'sticky', left: 0, zIndex: 2, background: 'var(--background)' }}>TIER</th>
                     {SEQUENCIAS.map((s) => (
                       <th key={s} style={thStyle()}>{LABEL_SEQUENCIA[s]}</th>
                     ))}
@@ -130,7 +137,7 @@ export default function MetricasTierPage() {
                     const cor = TIER_CORES[tier]
                     return (
                       <tr key={tier}>
-                        <td style={tdStyle()}>
+                        <td style={{ ...tdStyle(), position: 'sticky', left: 0, zIndex: 1, background: 'var(--background)' }}>
                           <span style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -149,11 +156,12 @@ export default function MetricasTierPage() {
                         </td>
                         {SEQUENCIAS.map((s) => {
                           const cell = matrix[tier][s]
+                          const bg = cell.total > 0 ? heatmapBg(cell.taxa) : 'transparent'
                           return (
-                            <td key={s} style={tdStyle()}>
+                            <td key={s} style={{ ...tdStyle(), background: bg }} title={cell.total > 0 ? `${cell.total} ligações · ${cell.taxa} eficiência` : undefined}>
                               {cell.total > 0 ? (
                                 <div>
-                                  <div style={{ fontSize: '1.1rem', fontFamily: 'var(--font-display)', color: '#FAFAF9', fontWeight: 500, lineHeight: 1 }}>
+                                  <div style={{ fontSize: '1.1rem', fontFamily: 'var(--font-display)', color: 'var(--foreground)', fontWeight: 500, lineHeight: 1 }}>
                                     {cell.total}
                                   </div>
                                   <div style={{ fontSize: '0.65rem', color: cell.taxa !== '—' ? cor : '#4B5563', marginTop: '2px' }}>
@@ -161,7 +169,7 @@ export default function MetricasTierPage() {
                                   </div>
                                 </div>
                               ) : (
-                                <span style={{ color: '#2A2A2A', fontSize: '0.8rem' }}>—</span>
+                                <span style={{ color: 'var(--border)', fontSize: '0.8rem' }}>—</span>
                               )}
                             </td>
                           )

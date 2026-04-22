@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/navbar";
 import CacheWarmer from "@/components/cache-warmer";
 import { ThemeProvider } from "@/lib/theme";
+import { ToastContainer } from "@/components/toast";
 
 export const metadata: Metadata = {
   title: "ProspectView",
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
         <ThemeProvider>
           <CacheWarmer />
+          <ToastContainer />
           <Navbar />
           <main style={{ maxWidth: "76rem", margin: "0 auto", padding: "2.5rem 2rem" }}>{children}</main>
         </ThemeProvider>

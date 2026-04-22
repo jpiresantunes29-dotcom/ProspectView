@@ -228,6 +228,27 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
   const campos = usuario === 'joao_pedro' ? camposJP : camposATRapido
   const cor    = corUsuario(usuario)
 
+  // Keyboard shortcuts: keys 1-9 increment corresponding field
+  const atalhoRef = useRef({ tierAberto: false, motivoAberto: false, campos, handleBotao: (_: TipoEvento) => {} })
+  atalhoRef.current.tierAberto   = tierModal.aberto
+  atalhoRef.current.motivoAberto = motivoModal.aberto
+  atalhoRef.current.campos       = campos
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const { tierAberto, motivoAberto, campos: c } = atalhoRef.current
+      if (tierAberto || motivoAberto) return
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      const idx = parseInt(e.key) - 1
+      if (!isNaN(idx) && idx >= 0 && idx < c.length) {
+        e.preventDefault()
+        handleBotao(c[idx].key)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   useEffect(() => { carregarDia() }, [usuario])
 
   async function carregarDia() {
@@ -383,18 +404,19 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
 
       {/* Grid de botões */}
       {carregando ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.625rem' }}>
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} style={{ height: '88px', background: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--border)', animation: 'pulse 1.5s ease-in-out infinite' }} />
           ))}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem', marginBottom: '2rem' }}>
-          {campos.map(({ key, label }) => {
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.625rem', marginBottom: '2rem' }}>
+          {campos.map(({ key, label }, fieldIdx) => {
             const count    = contadores[key] ?? 0
             const isSaving = salvando.has(key)
             const needsTier = TIPOS_TIER_SEQ.includes(key) || TIPOS_TIER_ONLY.includes(key)
             const corCampo = COR_EVENTO[key] ?? cor
+            const shortcut = fieldIdx < 9 ? String(fieldIdx + 1) : null
             return (
               <button
                 key={key}
@@ -425,7 +447,14 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
                   }}>
                     {label}
                   </span>
-                  <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: '3px', flexShrink: 0, alignItems: 'center' }}>
+                    {shortcut && (
+                      <span style={{
+                        fontSize: '0.48rem', fontWeight: 700, letterSpacing: '0.02em',
+                        color: 'var(--border)', border: '1px solid var(--border)',
+                        borderRadius: '2px', padding: '1px 3px', fontFamily: 'monospace',
+                      }}>{shortcut}</span>
+                    )}
                     {needsTier && (
                       <span style={{
                         fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.06em',

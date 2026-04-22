@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Registro } from '@/lib/supabase'
 import AnimatedTitle from '@/components/animated-title'
+import { showToast } from '@/components/toast'
 
 const BORDER = '1px solid var(--border)'
 
@@ -13,28 +14,35 @@ function fmtData(iso: string) {
   })
 }
 
-type Chip = { label: string; value: number; color: string }
+type Chip = { label: string; tooltip: string; value: number; color: string }
 
 function chipsJP(r: Registro): Chip[] {
   return [
-    { label: 'Emp',   value: r.empresas_encontradas, color: '#4DA3F7' },
-    { label: 'Qual',  value: r.leads_qualificados,   color: '#4DA3F7' },
-    { label: 'CRM',   value: r.leads_enviados_crm,   color: '#4DA3F7' },
+    { label: 'Emp',  tooltip: 'Empresas encontradas',  value: r.empresas_encontradas, color: '#4DA3F7' },
+    { label: 'Qual', tooltip: 'Leads qualificados',    value: r.leads_qualificados,   color: '#4DA3F7' },
+    { label: 'CRM',  tooltip: 'Leads enviados ao CRM', value: r.leads_enviados_crm,   color: '#4DA3F7' },
   ]
 }
 
 function chipsAT(r: Registro): Chip[] {
   return [
-    { label: 'Cont',  value: r.leads_contatados,  color: '#2DB881' },
-    { label: 'Resp',  value: r.respostas,          color: '#2DB881' },
-    { label: 'Reun',  value: r.reunioes_marcadas,  color: '#2DB881' },
+    { label: 'Cont', tooltip: 'Leads contatados',   value: r.leads_contatados,  color: '#2DB881' },
+    { label: 'Resp', tooltip: 'Respostas',           value: r.respostas,         color: '#2DB881' },
+    { label: 'Reun', tooltip: 'Reuniões marcadas',   value: r.reunioes_marcadas, color: '#2DB881' },
   ]
 }
 
+type FiltroUsuario = 'todos' | 'joao_pedro' | 'atanael'
+
 export default function HistoricoPage() {
-  const [registros, setRegistros]   = useState<Registro[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [confirmId, setConfirmId]   = useState<string | null>(null)
+  const [registros, setRegistros]         = useState<Registro[]>([])
+  const [loading, setLoading]             = useState(true)
+  const [confirmId, setConfirmId]         = useState<string | null>(null)
+  const [filtroUsuario, setFiltroUsuario] = useState<FiltroUsuario>('todos')
+  const [ordemInversa, setOrdemInversa]   = useState(false)
+
+  // Undo: map id → { registro, timeoutId }
+  const pendingDelete = useRef<Map<string, { registro: Registro; timerId: ReturnType<typeof setTimeout> }>>(new Map())
 
   useEffect(() => {
     supabase
@@ -47,13 +55,58 @@ export default function HistoricoPage() {
       })
   }, [])
 
-  async function excluir(id: string) {
+  function iniciarExclusao(id: string) {
     setConfirmId(null)
+    const registro = registros.find(r => r.id === id)
+    if (!registro) return
+
+    // Optimistically remove from UI
     setRegistros(prev => prev.filter(r => r.id !== id))
-    await supabase.from('registros').delete().eq('id', id)
+
+    const timerId = setTimeout(async () => {
+      pendingDelete.current.delete(id)
+      await supabase.from('registros').delete().eq('id', id)
+    }, 5000)
+
+    pendingDelete.current.set(id, { registro, timerId })
+
+    showToast('Registro excluído.', {
+      type: 'info',
+      duration: 5000,
+      action: {
+        label: 'DESFAZER',
+        onClick: () => desfazerExclusao(id),
+      },
+    })
+  }
+
+  function desfazerExclusao(id: string) {
+    const entry = pendingDelete.current.get(id)
+    if (!entry) return
+    clearTimeout(entry.timerId)
+    pendingDelete.current.delete(id)
+    setRegistros(prev => {
+      const novo = [...prev, entry.registro]
+      novo.sort((a, b) => (a.data > b.data ? -1 : 1))
+      return novo
+    })
   }
 
   const isJP = (r: Registro) => r.usuario === 'joao_pedro'
+
+  const exibidos = registros
+    .filter(r => filtroUsuario === 'todos' || r.usuario === filtroUsuario)
+    .slice()
+    .sort((a, b) => {
+      if (ordemInversa) return a.data > b.data ? 1 : -1
+      return a.data > b.data ? -1 : 1
+    })
+
+  const filtroLabels: { key: FiltroUsuario; label: string; color: string }[] = [
+    { key: 'todos',      label: 'Todos',        color: 'var(--muted-foreground)' },
+    { key: 'joao_pedro', label: 'João Pedro',   color: '#4DA3F7' },
+    { key: 'atanael',    label: 'Atanael',      color: '#2DB881' },
+  ]
 
   return (
     <div>
@@ -62,17 +115,64 @@ export default function HistoricoPage() {
         <AnimatedTitle text="Histórico" />
       </div>
 
+      {/* Controles */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+        {filtroLabels.map(({ key, label, color }) => (
+          <button
+            key={key}
+            onClick={() => setFiltroUsuario(key)}
+            style={{
+              padding: '4px 12px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              letterSpacing: '0.03em',
+              border: '1px solid',
+              borderRadius: 'var(--radius)',
+              cursor: 'pointer',
+              transition: 'all 0.12s',
+              fontFamily: "'Segoe UI', system-ui, sans-serif",
+              borderColor: filtroUsuario === key ? color : 'var(--border)',
+              background:  filtroUsuario === key ? `${color}14` : 'transparent',
+              color:       filtroUsuario === key ? color : 'var(--muted-foreground)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+
+        <div style={{ flex: 1 }} />
+
+        <button
+          onClick={() => setOrdemInversa(v => !v)}
+          title={ordemInversa ? 'Mais recentes primeiro' : 'Mais antigos primeiro'}
+          style={{
+            padding: '4px 10px',
+            fontSize: '0.7rem',
+            fontWeight: 600,
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            cursor: 'pointer',
+            background: 'transparent',
+            color: 'var(--muted-foreground)',
+            fontFamily: "'Segoe UI', system-ui, sans-serif",
+            display: 'flex', alignItems: 'center', gap: '4px',
+          }}
+        >
+          {ordemInversa ? '↑ Antigos' : '↓ Recentes'}
+        </button>
+      </div>
+
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ height: '52px', background: 'var(--surface)', border: BORDER, borderRadius: '4px' }} />
+            <div key={i} style={{ height: '52px', background: 'var(--surface)', border: BORDER, borderRadius: 'var(--radius)' }} />
           ))}
         </div>
-      ) : registros.length === 0 ? (
+      ) : exibidos.length === 0 ? (
         <p style={{ fontSize: '0.78rem', color: 'var(--muted-foreground)' }}>Nenhum registro encontrado.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {registros.map((r) => {
+          {exibidos.map((r) => {
             const jp    = isJP(r)
             const cor   = jp ? '#4DA3F7' : '#2DB881'
             const nome  = jp ? 'João Pedro' : 'Atanael'
@@ -89,8 +189,9 @@ export default function HistoricoPage() {
                   padding: '0.65rem 0.875rem',
                   background: isConf ? 'rgba(248,113,113,0.05)' : 'var(--surface)',
                   border: `1px solid ${isConf ? 'rgba(248,113,113,0.3)' : 'var(--border)'}`,
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius)',
                   transition: 'border-color 0.12s',
+                  flexWrap: 'wrap',
                 }}
               >
                 {/* Data */}
@@ -117,8 +218,8 @@ export default function HistoricoPage() {
 
                 {/* Chips de métricas */}
                 <div style={{ display: 'flex', gap: '6px', flex: 1, flexWrap: 'wrap' }}>
-                  {chips.map(({ label, value }) => (
-                    <span key={label} style={{
+                  {chips.map(({ label, tooltip, value }) => (
+                    <span key={label} title={tooltip} style={{
                       fontSize: '0.65rem',
                       fontWeight: 600,
                       color: value > 0 ? cor : 'var(--muted-foreground)',
@@ -129,6 +230,7 @@ export default function HistoricoPage() {
                       fontVariantNumeric: 'tabular-nums',
                       fontFamily: "'Segoe UI', system-ui, sans-serif",
                       opacity: value === 0 ? 0.45 : 1,
+                      cursor: 'default',
                     }}>
                       {label} {value}
                     </span>
@@ -139,7 +241,7 @@ export default function HistoricoPage() {
                 {isConf ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                     <span style={{ fontSize: '0.65rem', color: '#F87171' }}>Excluir?</span>
-                    <button onClick={() => excluir(r.id)} style={{
+                    <button onClick={() => iniciarExclusao(r.id)} style={{
                       padding: '2px 10px', fontSize: '0.65rem', fontWeight: 700,
                       background: '#F87171', color: '#fff', border: 'none',
                       borderRadius: '3px', cursor: 'pointer',
@@ -172,7 +274,7 @@ export default function HistoricoPage() {
           })}
 
           <p style={{ fontSize: '0.62rem', color: 'var(--muted-foreground)', marginTop: '0.75rem', opacity: 0.6 }}>
-            {registros.length} registro{registros.length !== 1 ? 's' : ''} · Para editar, vá em Registrar e selecione a data.
+            {exibidos.length} registro{exibidos.length !== 1 ? 's' : ''} · Para editar, vá em Registrar e selecione a data.
           </p>
         </div>
       )}
