@@ -75,7 +75,7 @@ export function diasUteis(inicio: Date, fim: Date): number {
 
 export function porDia(valor: number, dias: number): string {
   if (!dias) return '—'
-  return (valor / dias).toFixed(1)
+  return Math.round(valor / dias).toString()
 }
 
 export type FunilEtapa = {
