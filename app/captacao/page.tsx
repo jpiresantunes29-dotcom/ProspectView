@@ -11,8 +11,44 @@ import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cartesi
 import AnimatedTitle from '@/components/animated-title'
 import { getMetas, type Metas } from '@/lib/metas'
 
-const BORDER = '1px solid #1F1F1F'
-const tooltipStyle = { fontSize: 12, background: '#141414', border: '1px solid #1F1F1F', borderRadius: 4, color: '#FAFAF9' }
+const tooltipStyle = {
+  fontSize: 12,
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 4,
+  color: 'var(--foreground)',
+}
+
+function FunnelArrow({ taxa }: { taxa: string }) {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '0 1rem',
+      flexShrink: 0,
+      gap: '6px',
+    }}>
+      <span style={{
+        fontSize: '0.85rem',
+        fontWeight: 700,
+        color: '#F0A830',
+        fontVariantNumeric: 'tabular-nums',
+      }}>{taxa}</span>
+      <svg width="28" height="8" viewBox="0 0 28 8" fill="none">
+        <path d="M0 4H22M22 4L18 1M22 4L18 7" stroke="var(--border-hover)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span style={{
+        fontSize: '0.52rem',
+        letterSpacing: '0.07em',
+        textTransform: 'uppercase',
+        color: 'var(--muted-foreground)',
+        fontWeight: 500,
+      }}>conversão</span>
+    </div>
+  )
+}
 
 export default function CaptacaoPage() {
   const [periodo, setPeriodo] = useState<Periodo>('30d')
@@ -46,11 +82,22 @@ export default function CaptacaoPage() {
   const { inicio, fim } = periodoParaDatas(periodo)
   const dias = diasUteis(new Date(inicio), new Date(fim))
 
-  const graficoDiario = registros.map((r) => ({ data: r.data.slice(5), encontrados: r.empresas_encontradas, enviados: r.leads_enviados_crm }))
+  const graficoDiario = registros.map((r) => ({
+    data: r.data.slice(5),
+    encontrados: r.empresas_encontradas,
+    enviados: r.leads_enviados_crm,
+  }))
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '3rem', paddingBottom: '2rem', borderBottom: BORDER }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        marginBottom: '3rem',
+        paddingBottom: '2rem',
+        borderBottom: '1px solid var(--border)',
+      }}>
         <div>
           <p className="section-label" style={{ marginBottom: '0.75rem' }}>João Pedro</p>
           <AnimatedTitle text="Captação" />
@@ -60,20 +107,52 @@ export default function CaptacaoPage() {
 
       {loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0 2.5rem' }}>
-          {Array.from({ length: 6 }).map((_, i) => <MetricCardSkeleton key={i} />)}
+          {Array.from({ length: 3 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0 2.5rem' }}>
-            <MetricCard label="Empresas encontradas" value={t.empresas_encontradas} color="captacao"
-              prev={prevT.empresas_encontradas} meta={metas?.empresas_encontradas} dias={dias} />
-            <MetricCard label="Leads qualificados" value={t.leads_qualificados} sub={`Taxa: ${pct(t.leads_qualificados, t.empresas_encontradas)}`} color="captacao"
-              prev={prevT.leads_qualificados} meta={metas?.leads_qualificados} dias={dias} />
-            <MetricCard label="Enviados ao CRM" value={t.leads_enviados_crm} sub={`Taxa: ${pct(t.leads_enviados_crm, t.leads_qualificados)}`} color="captacao"
-              prev={prevT.leads_enviados_crm} meta={metas?.leads_enviados_crm} dias={dias} />
-            <MetricCard label="Encontrados por dia" value={porDia(t.empresas_encontradas, dias)} sub={`${dias} dias úteis`} color="produtividade" />
-            <MetricCard label="Qualificados por dia" value={porDia(t.leads_qualificados, dias)} color="produtividade" />
-            <MetricCard label="Enviados por dia" value={porDia(t.leads_enviados_crm, dias)} color="produtividade" />
+
+          {/* Funil de captação */}
+          <div style={{ display: 'flex', alignItems: 'stretch' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <MetricCard
+                label="Empresas encontradas"
+                value={t.empresas_encontradas}
+                sub={`${porDia(t.empresas_encontradas, dias)} / dia`}
+                color="captacao"
+                prev={prevT.empresas_encontradas}
+                meta={metas?.empresas_encontradas}
+                dias={dias}
+              />
+            </div>
+
+            <FunnelArrow taxa={pct(t.leads_qualificados, t.empresas_encontradas)} />
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <MetricCard
+                label="Leads qualificados"
+                value={t.leads_qualificados}
+                sub={`${porDia(t.leads_qualificados, dias)} / dia`}
+                color="captacao"
+                prev={prevT.leads_qualificados}
+                meta={metas?.leads_qualificados}
+                dias={dias}
+              />
+            </div>
+
+            <FunnelArrow taxa={pct(t.leads_enviados_crm, t.leads_qualificados)} />
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <MetricCard
+                label="Enviados ao CRM"
+                value={t.leads_enviados_crm}
+                sub={`${porDia(t.leads_enviados_crm, dias)} / dia`}
+                color="captacao"
+                prev={prevT.leads_enviados_crm}
+                meta={metas?.leads_enviados_crm}
+                dias={dias}
+              />
+            </div>
           </div>
 
           {graficoDiario.length > 0 && (
@@ -81,7 +160,7 @@ export default function CaptacaoPage() {
               <p className="section-label" style={{ marginBottom: '1.5rem' }}>Captação por dia</p>
               <ResponsiveContainer width="100%" height={200}>
                 <ComposedChart data={graficoDiario} barCategoryGap="40%">
-                  <CartesianGrid strokeDasharray="1 4" stroke="#1F1F1F" vertical={false} />
+                  <CartesianGrid strokeDasharray="1 4" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="data" tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: '#ffffff05' }} />
@@ -91,6 +170,7 @@ export default function CaptacaoPage() {
               </ResponsiveContainer>
             </section>
           )}
+
         </div>
       )}
     </div>
