@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase, LABEL_EVENTO, COR_EVENTO, type TipoEvento, type Evento } from '@/lib/supabase'
+import {
+  supabase, LABEL_EVENTO, COR_EVENTO, type TipoEvento, type Evento,
+  type TipoAtividade, type StatusContato, LABEL_ATIVIDADE, COR_ATIVIDADE, LABEL_STATUS,
+} from '@/lib/supabase'
 import { invalidateRegistrosCache } from '@/lib/queryCache'
 import { type SequenciaLigacao, LABEL_SEQUENCIA } from '@/lib/metrics'
 
@@ -31,7 +34,6 @@ const camposAT: { key: TipoEvento; label: string }[] = [
   { key: 'follow_ups',          label: 'Follow-ups'            },
 ]
 
-// negocio_fechado só aparece no modo rápido (é evento puro, sem coluna em registros)
 const camposATRapido: { key: TipoEvento; label: string }[] = [
   ...camposAT,
   { key: 'negocio_fechado', label: 'Negócio fechado' },
@@ -60,8 +62,6 @@ const defaultValores = () => ({
   ligacoes_feitas: '', ligacoes_sucesso: '', ligacoes_falha: '', follow_ups: '',
 })
 
-// ─── Estilos base ─────────────────────────────────────────────────────────────
-
 const corUsuario = (u: Usuario) => u === 'joao_pedro' ? 'var(--color-captacao)' : 'var(--color-contato)'
 
 function horaFormatada(iso: string) {
@@ -75,125 +75,87 @@ export default function RegistrarPage() {
   const [usuario, setUsuario] = useState<Usuario>('joao_pedro')
 
   return (
-    <div style={{ maxWidth: '520px' }}>
-      {/* Header compacto */}
-      <div style={{ marginBottom: '1.75rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border)' }}>
-        <p style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.75rem' }}>
-          Registro diário
-        </p>
+    <div>
+      <p className="section-label" style={{ marginBottom: '1rem' }}>Registro diário</p>
 
-        {/* Seletor de usuário + toggle de modo na mesma linha */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {/* Usuários */}
-          <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
-            {(['joao_pedro', 'atanael'] as Usuario[]).map((u) => {
-              const ativo = usuario === u
-              const cor   = corUsuario(u)
-              return (
-                <button
-                  key={u}
-                  onClick={() => setUsuario(u)}
-                  style={{
-                    flex: 1, padding: '0.5rem 0.75rem',
-                    fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.03em',
-                    border: '1px solid', borderRadius: '4px', cursor: 'pointer',
-                    transition: 'all 0.15s',
-                    borderColor: ativo ? cor : 'var(--border)',
-                    background:  ativo ? cor + '14' : 'transparent',
-                    color:       ativo ? cor : 'var(--muted-foreground)',
-                    fontFamily: "'Segoe UI', system-ui, sans-serif",
-                  }}
-                >
-                  {u === 'joao_pedro' ? 'João Pedro' : 'Atanael'}
-                </button>
-              )
-            })}
-          </div>
+      {/* Tab bar: JP | AT + toggle modo (só JP) */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        borderBottom: '1px solid var(--border)',
+        marginBottom: '2rem',
+      }}>
+        {(['joao_pedro', 'atanael'] as Usuario[]).map((u) => {
+          const ativo = usuario === u
+          const cor   = corUsuario(u)
+          return (
+            <button
+              key={u}
+              onClick={() => setUsuario(u)}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: ativo ? `2px solid ${cor}` : '2px solid transparent',
+                marginBottom: '-1px',
+                cursor: 'pointer',
+                color: ativo ? cor : 'var(--muted-foreground)',
+                fontSize: '0.85rem',
+                fontWeight: ativo ? 700 : 500,
+                letterSpacing: '0.02em',
+                transition: 'color 0.15s',
+                fontFamily: "'Segoe UI', system-ui, sans-serif",
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {u === 'joao_pedro' ? 'João Pedro' : 'Atanael'}
+            </button>
+          )
+        })}
 
-          {/* Divisor */}
-          <div style={{ width: '1px', height: '28px', background: 'var(--border)', flexShrink: 0 }} />
-
-          {/* Toggle modo */}
-          <div style={{ display: 'flex', gap: '2px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '5px', padding: '2px', flexShrink: 0 }}>
-            {([['rapido', 'Rápido'], ['manual', 'Manual']] as [Modo, string][]).map(([m, label]) => (
+        {usuario === 'joao_pedro' && (
+          <div style={{
+            marginLeft: 'auto',
+            marginBottom: '0.625rem',
+            display: 'flex',
+            gap: '2px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '5px',
+            padding: '2px',
+            flexShrink: 0,
+          }}>
+            {(['rapido', 'manual'] as Modo[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setModo(m)}
                 style={{
-                  padding: '0.35rem 0.7rem',
-                  fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.03em',
-                  border: 'none', borderRadius: '3px', cursor: 'pointer',
-                  transition: 'all 0.15s', whiteSpace: 'nowrap',
+                  padding: '0.3rem 0.75rem',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.03em',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
                   background: modo === m ? 'var(--surface-elevated)' : 'transparent',
                   color:      modo === m ? 'var(--foreground)' : 'var(--muted-foreground)',
                   fontFamily: "'Segoe UI', system-ui, sans-serif",
                 }}
               >
-                {label}
+                {m === 'rapido' ? 'Rápido' : 'Manual'}
               </button>
             ))}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Atanael usa a página /contato para registrar atividades */}
       {usuario === 'atanael' ? (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '1rem',
-          padding: '3rem 2rem',
-          textAlign: 'center',
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '6px',
-        }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: '50%',
-            background: 'rgba(45,184,129,0.1)',
-            border: '1px solid rgba(45,184,129,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2DB881" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12"/>
-              <path d="M2 2l20 20"/>
-            </svg>
-          </div>
-          <div>
-            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)', marginBottom: '0.35rem', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-              Atanael registra na página Contato
-            </p>
-            <p style={{ fontSize: '0.72rem', color: 'var(--muted-foreground)', lineHeight: 1.5, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-              Use o wizard de atividades para registrar cold calls,<br />
-              agendamentos, follow-ups e muito mais.
-            </p>
-          </div>
-          <a
-            href="/contato"
-            style={{
-              padding: '0.75rem 1.75rem',
-              background: '#2DB881',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-              cursor: 'pointer',
-              fontFamily: "'Segoe UI', system-ui, sans-serif",
-            }}
-          >
-            Ir para Contato →
-          </a>
-        </div>
+        <WizardAtanael />
       ) : modo === 'rapido' ? (
-        <ModoRapido  usuario={usuario} />
+        <ModoRapido usuario={usuario} />
       ) : (
-        <ModoManual  usuario={usuario} />
+        <ModoManual usuario={usuario} />
       )}
     </div>
   )
@@ -207,20 +169,16 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
   const [carregando, setCarregando] = useState(true)
   const [salvando,   setSalvando]   = useState<Set<TipoEvento>>(new Set())
 
-  // Undo temporário por 3s
   const [undoId,   setUndoId]   = useState<string | null>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Hover/confirmação no feed
-  const [hoverId,    setHoverId]    = useState<string | null>(null)
-  const [confirmId,  setConfirmId]  = useState<string | null>(null)
+  const [hoverId,   setHoverId]   = useState<string | null>(null)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
 
-  // Modal TIER + sequência
   const [tierModal,       setTierModal]       = useState<{ aberto: boolean; tipo: TipoEvento | null }>({ aberto: false, tipo: null })
   const [tierSelecionado, setTierSelecionado] = useState<1|2|3|4|null>(null)
   const [seqSelecionada,  setSeqSelecionada]  = useState<SequenciaLigacao | null>(null)
 
-  // Modal motivo falha
   const [motivoModal, setMotivoModal] = useState<{ aberto: boolean; eventoId: string | null }>({ aberto: false, eventoId: null })
   const [motivoTexto, setMotivoTexto] = useState('')
   const motivoRef = useRef<HTMLInputElement>(null)
@@ -228,7 +186,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
   const campos = usuario === 'joao_pedro' ? camposJP : camposATRapido
   const cor    = corUsuario(usuario)
 
-  // Keyboard shortcuts: keys 1-9 increment corresponding field
   const atalhoRef = useRef({ tierAberto: false, motivoAberto: false, campos, handleBotao: (_: TipoEvento) => {} })
   atalhoRef.current.tierAberto   = tierModal.aberto
   atalhoRef.current.motivoAberto = motivoModal.aberto
@@ -308,7 +265,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
 
   async function registrar(tipo: TipoEvento, tier: number | null, sequencia: SequenciaLigacao | null) {
     const data = hoje()
-    // Otimista
     setContadores(prev => ({ ...prev, [tipo]: (prev[tipo] ?? 0) + 1 }))
     const novoEv: Evento = {
       id: crypto.randomUUID(), data, usuario, tipo,
@@ -318,7 +274,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
     setEventos(prev => [novoEv, ...prev])
     setSalvando(prev => new Set([...prev, tipo]))
 
-    // Undo disponível por 3s
     setUndoId(novoEv.id)
     if (undoTimer.current) clearTimeout(undoTimer.current)
     undoTimer.current = setTimeout(() => setUndoId(null), 3000)
@@ -372,7 +327,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
 
   return (
     <>
-      {/* Indicador de ações hoje */}
       {totalHoje > 0 && (
         <p style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)', marginBottom: '1.25rem', letterSpacing: '0.04em' }}>
           <span style={{ color: cor, fontWeight: 600 }}>{totalHoje}</span>
@@ -380,7 +334,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
         </p>
       )}
 
-      {/* Toast de desfazer */}
       {undoId && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -402,7 +355,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
         </div>
       )}
 
-      {/* Grid de botões */}
       {carregando ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.625rem' }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -438,7 +390,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
                 onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               >
-                {/* Linha superior: label + indicadores */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.25rem' }}>
                   <span style={{
                     fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.06em',
@@ -466,7 +417,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
                   </div>
                 </div>
 
-                {/* Linha inferior: contador + botão +1 */}
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                   <span style={{
                     fontSize: '1.75rem', fontFamily: 'var(--font-display)',
@@ -491,7 +441,6 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
         </div>
       )}
 
-      {/* Feed de eventos */}
       {eventos.length > 0 && (
         <div>
           <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.75rem' }}>
@@ -499,9 +448,9 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {eventos.map((ev, i) => {
-              const corEv    = COR_EVENTO[ev.tipo] ?? 'var(--muted-foreground)'
-              const isHov    = hoverId === ev.id
-              const isConf   = confirmId === ev.id
+              const corEv  = COR_EVENTO[ev.tipo] ?? 'var(--muted-foreground)'
+              const isHov  = hoverId === ev.id
+              const isConf = confirmId === ev.id
               return (
                 <div
                   key={ev.id}
@@ -559,7 +508,7 @@ function ModoRapido({ usuario }: { usuario: Usuario }) {
       )}
 
       {eventos.length === 0 && !carregando && (
-        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--border)' }}>
+        <div style={{ textAlign: 'center', padding: '3rem 0' }}>
           <p style={{ fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>
             Nenhum registro hoje. Toque um botão para começar.
           </p>
@@ -650,7 +599,6 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
   const campos = usuario === 'joao_pedro' ? camposJP : camposAT
   const cor    = corUsuario(usuario)
 
-  // Carrega dados existentes ao mudar data ou usuário
   useEffect(() => {
     let cancelled = false
     async function carregar() {
@@ -687,7 +635,6 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
     setStatus('loading')
     setErroMsg('')
 
-    // Monta payload apenas com os campos do usuário selecionado
     const payload: Record<string, number | string> = { data, usuario }
     const todosCampos = [...camposJP, ...camposAT]
     for (const { key } of todosCampos) {
@@ -729,8 +676,7 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      {/* Data */}
+    <form onSubmit={handleSubmit} style={{ maxWidth: '480px' }}>
       <div style={{ marginBottom: '2rem' }}>
         <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
           Data
@@ -755,7 +701,6 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
         </p>
       </div>
 
-      {/* Campos */}
       <div style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
           <div style={{ width: '6px', height: '6px', borderRadius: '1px', background: cor, flexShrink: 0 }} />
@@ -791,7 +736,6 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
         </div>
       </div>
 
-      {/* Botão salvar */}
       <button
         type="submit"
         disabled={status === 'loading'}
@@ -809,7 +753,6 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
         {status === 'loading' ? 'Salvando...' : 'Salvar registro'}
       </button>
 
-      {/* Botão limpar */}
       {!confirmLimpar ? (
         <button
           type="button"
@@ -845,4 +788,275 @@ function ModoManual({ usuario }: { usuario: Usuario }) {
       )}
     </form>
   )
+}
+
+// ─── WIZARD ATANAEL ───────────────────────────────────────────────────────────
+
+type StepAT = 'idle' | 'tier' | 'tipo' | 'tentativa' | 'status' | 'salvando' | 'ok'
+
+const ATIVIDADES: TipoAtividade[] = [
+  'cold_call', 'whatsapp', 'agendamento_reuniao', 'follow_up',
+  'proposta', 'negocio_fechado', 'reuniao_realizada', 'reuniao_furada',
+]
+
+const STATUS_OPCOES: StatusContato[] = ['atendeu_normal', 'atendeu_ocupado', 'nao_atendeu']
+
+function WizardAtanael() {
+  const [step,      setStep]      = useState<StepAT>('idle')
+  const [tier,      setTier]      = useState<number | null>(null)
+  const [tipo,      setTipo]      = useState<TipoAtividade | null>(null)
+  const [tentativa, setTentativa] = useState<number>(1)
+  const [erro,      setErro]      = useState('')
+
+  function reset() {
+    setStep('idle'); setTier(null); setTipo(null); setTentativa(1); setErro('')
+  }
+
+  async function salvarDireto(t: TipoAtividade) {
+    if (!tier) return
+    setStep('salvando')
+    const { error } = await supabase.from('atividades').insert({
+      data: hoje(), usuario: 'atanael', tier,
+      tipo_atividade: t, status_contato: null, tentativa: null,
+    })
+    if (error) { setErro(error.message); setStep('tipo'); return }
+    setStep('ok')
+  }
+
+  async function salvarColdCall(s: StatusContato) {
+    if (!tier || !tipo) return
+    setStep('salvando')
+    const { error } = await supabase.from('atividades').insert({
+      data: hoje(), usuario: 'atanael', tier,
+      tipo_atividade: tipo, status_contato: s, tentativa,
+    })
+    if (error) { setErro(error.message); setStep('status'); return }
+    setStep('ok')
+  }
+
+  function escolherTipo(t: TipoAtividade) {
+    setTipo(t)
+    if (t === 'cold_call') setStep('tentativa')
+    else salvarDireto(t)
+  }
+
+  function escolherTentativa(n: number) {
+    setTentativa(n)
+    setStep('status')
+  }
+
+  const cardStyle: React.CSSProperties = {
+    maxWidth: '480px',
+    padding: '2rem',
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderRadius: '6px',
+  }
+
+  const btnBase: React.CSSProperties = {
+    width: '100%',
+    padding: '0.875rem 1rem',
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '0.82rem',
+    fontWeight: 500,
+    color: 'var(--foreground)',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    transition: 'border-color 0.12s, background 0.12s',
+    fontFamily: "'Segoe UI', system-ui, sans-serif",
+  }
+
+  function Dot({ color }: { color: string }) {
+    return <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+  }
+
+  function Voltar({ onClick }: { onClick: () => void }) {
+    return (
+      <button onClick={onClick} style={{
+        background: 'none', border: 'none', cursor: 'pointer',
+        fontSize: '0.72rem', color: 'var(--muted-foreground)',
+        padding: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', gap: '4px',
+      }}>
+        ← Voltar
+      </button>
+    )
+  }
+
+  function Progresso({ atual, total }: { atual: number; total: number }) {
+    return (
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '1.5rem' }}>
+        {Array.from({ length: total }).map((_, i) => (
+          <div key={i} style={{
+            flex: 1, height: '2px', borderRadius: '2px',
+            background: i < atual ? 'var(--color-contato)' : 'var(--border)',
+            transition: 'background 0.2s',
+          }} />
+        ))}
+      </div>
+    )
+  }
+
+  if (step === 'idle') return (
+    <div style={{ paddingTop: '1rem' }}>
+      <button
+        onClick={() => setStep('tier')}
+        style={{
+          padding: '1rem 2.5rem',
+          background: 'var(--color-contato)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(45,184,129,0.3)',
+          fontFamily: "'Segoe UI', system-ui, sans-serif",
+        }}
+      >
+        + Registrar atividade
+      </button>
+    </div>
+  )
+
+  if (step === 'tier') return (
+    <div style={cardStyle}>
+      <Progresso atual={0} total={4} />
+      <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
+        Etapa 1 de 4
+      </p>
+      <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
+        Qual é o Tier do contato?
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        {[1, 2, 3, 4].map((t) => (
+          <button key={t} onClick={() => { setTier(t); setStep('tipo') }} style={{ ...btnBase, justifyContent: 'center', textAlign: 'center', fontSize: '1.1rem', fontWeight: 700, padding: '1.25rem' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-contato)'; e.currentTarget.style.background = 'rgba(45,184,129,0.06)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
+          >
+            Tier {t}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  if (step === 'tipo') return (
+    <div style={cardStyle}>
+      <Voltar onClick={() => setStep('tier')} />
+      <Progresso atual={1} total={4} />
+      <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
+        Etapa 2 de 4 — Tier {tier}
+      </p>
+      <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
+        Qual atividade foi realizada?
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {ATIVIDADES.map((t) => (
+          <button key={t} onClick={() => escolherTipo(t)} style={btnBase}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = COR_ATIVIDADE[t]; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
+          >
+            <Dot color={COR_ATIVIDADE[t]} />
+            {LABEL_ATIVIDADE[t]}
+            {t === 'cold_call' && <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--muted-foreground)' }}>tentativa + status</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  if (step === 'tentativa') return (
+    <div style={cardStyle}>
+      <Voltar onClick={() => setStep('tipo')} />
+      <Progresso atual={2} total={4} />
+      <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
+        Etapa 3 de 4 — Tier {tier} · Cold Call
+      </p>
+      <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
+        Qual é o número da tentativa?
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+          <button key={n} onClick={() => escolherTentativa(n)} style={{
+            ...btnBase,
+            justifyContent: 'center', textAlign: 'center',
+            fontSize: '1rem', fontWeight: 700, padding: '0.875rem',
+            borderColor: tentativa === n ? 'var(--color-contato)' : 'var(--border)',
+            background:   tentativa === n ? 'rgba(45,184,129,0.1)' : 'transparent',
+            color:        tentativa === n ? 'var(--color-contato)' : 'var(--foreground)',
+          }}
+            onMouseEnter={e => { if (tentativa !== n) { e.currentTarget.style.borderColor = 'var(--color-contato)'; e.currentTarget.style.background = 'rgba(45,184,129,0.06)' } }}
+            onMouseLeave={e => { if (tentativa !== n) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' } }}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  if (step === 'status') return (
+    <div style={cardStyle}>
+      <Voltar onClick={() => setStep('tentativa')} />
+      <Progresso atual={3} total={4} />
+      <p style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
+        Etapa 4 de 4 — Tier {tier} · Tentativa {tentativa}
+      </p>
+      <p style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.75rem', color: 'var(--foreground)' }}>
+        Como foi o contato?
+      </p>
+      {erro && <p style={{ fontSize: '0.72rem', color: '#F87171', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(248,113,113,0.08)', borderRadius: '4px', border: '1px solid rgba(248,113,113,0.2)' }}>{erro}</p>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {STATUS_OPCOES.map((s) => {
+          const cor = s === 'atendeu_normal' ? '#34D399' : s === 'atendeu_ocupado' ? '#FBBF24' : '#F87171'
+          return (
+            <button key={s} onClick={() => salvarColdCall(s)} style={btnBase}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = cor; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
+            >
+              <Dot color={cor} />
+              {LABEL_STATUS[s]}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+
+  if (step === 'salvando') return (
+    <div style={{ ...cardStyle, textAlign: 'center', padding: '3rem' }}>
+      <p style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>Salvando...</p>
+    </div>
+  )
+
+  if (step === 'ok') return (
+    <div style={{ ...cardStyle, textAlign: 'center', padding: '3rem 2rem' }}>
+      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(45,184,129,0.12)', border: '1px solid rgba(45,184,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-contato)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--foreground)', marginBottom: '0.5rem' }}>Atividade registrada</p>
+      <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '2rem' }}>
+        {tipo && LABEL_ATIVIDADE[tipo]} · Tier {tier}
+      </p>
+      <button onClick={reset} style={{
+        padding: '0.75rem 2rem', background: 'var(--color-contato)', color: '#fff',
+        border: 'none', borderRadius: '4px', fontSize: '0.75rem',
+        fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
+        cursor: 'pointer', fontFamily: "'Segoe UI', system-ui, sans-serif",
+      }}>
+        + Registrar outra
+      </button>
+    </div>
+  )
+
+  return null
 }
