@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Registro, Atividade } from '@/lib/supabase'
+import type { Evento, Atividade } from '@/lib/supabase'
 import { LABEL_ATIVIDADE, COR_ATIVIDADE } from '@/lib/supabase'
 import AnimatedTitle from '@/components/animated-title'
-import { showToast } from '@/components/toast'
 
 const BORDER = '1px solid var(--border)'
 
@@ -15,105 +14,126 @@ function fmtData(iso: string) {
   })
 }
 
-type Chip = { label: string; tooltip: string; value: number; color: string }
-
-function chipsJP(r: Registro): Chip[] {
-  return [
-    { label: 'Emp',  tooltip: 'Empresas encontradas',  value: r.empresas_encontradas, color: '#4DA3F7' },
-    { label: 'Qual', tooltip: 'Leads qualificados',    value: r.leads_qualificados,   color: '#4DA3F7' },
-    { label: 'CRM',  tooltip: 'Leads enviados ao CRM', value: r.leads_enviados_crm,   color: '#4DA3F7' },
-  ]
-}
-
-function chipsAT(r: Registro): Chip[] {
-  return [
-    { label: 'Cont', tooltip: 'Leads contatados',   value: r.leads_contatados,  color: '#2DB881' },
-    { label: 'Resp', tooltip: 'Respostas',           value: r.respostas,         color: '#2DB881' },
-    { label: 'Reun', tooltip: 'Reuniões marcadas',   value: r.reunioes_marcadas, color: '#2DB881' },
-  ]
-}
-
-// Agrupa atividades por data → contagem por tipo
-function agruparAtividades(atividades: Atividade[]): Map<string, Record<string, number>> {
-  const mapa = new Map<string, Record<string, number>>()
-  for (const a of atividades) {
-    if (!mapa.has(a.data)) mapa.set(a.data, {})
-    const dia = mapa.get(a.data)!
-    dia[a.tipo_atividade] = (dia[a.tipo_atividade] ?? 0) + 1
-  }
-  return mapa
-}
-
 type FiltroUsuario = 'todos' | 'joao_pedro' | 'atanael'
 
+// Resumo de um dia por usuário, construído a partir de eventos
+interface DiaResumo {
+  data: string
+  usuario: string
+  contagens: Record<string, number>
+  fonte: 'eventos' | 'atividades'
+}
+
+function agruparEventos(eventos: Evento[]): DiaResumo[] {
+  const mapa = new Map<string, DiaResumo>()
+  for (const ev of eventos) {
+    const key = `${ev.data}::${ev.usuario}`
+    if (!mapa.has(key)) {
+      mapa.set(key, { data: ev.data, usuario: ev.usuario, contagens: {}, fonte: 'eventos' })
+    }
+    const dia = mapa.get(key)!
+    dia.contagens[ev.tipo] = (dia.contagens[ev.tipo] ?? 0) + 1
+  }
+  return Array.from(mapa.values())
+}
+
+function agruparAtividades(atividades: Atividade[]): DiaResumo[] {
+  const mapa = new Map<string, DiaResumo>()
+  for (const a of atividades) {
+    const key = `${a.data}::${a.usuario}`
+    if (!mapa.has(key)) {
+      mapa.set(key, { data: a.data, usuario: a.usuario, contagens: {}, fonte: 'atividades' })
+    }
+    const dia = mapa.get(key)!
+    dia.contagens[a.tipo_atividade] = (dia.contagens[a.tipo_atividade] ?? 0) + 1
+  }
+  return Array.from(mapa.values())
+}
+
+// Labels curtos para chips
+const LABEL_CURTO: Record<string, string> = {
+  empresas_encontradas: 'Emp',
+  leads_qualificados:   'Qual',
+  leads_enviados_crm:   'CRM',
+  leads_contatados:     'Cont',
+  respostas:            'Resp',
+  interessados:         'Inter',
+  reunioes_marcadas:    'Reun',
+  reunioes_realizadas:  'Reun ✓',
+  oportunidades:        'Opor',
+  ligacoes_feitas:      'Lig',
+  ligacoes_sucesso:     'Lig ✓',
+  ligacoes_falha:       'Lig ✗',
+  follow_ups:           'FUP',
+  negocio_fechado:      'Fechado',
+  cold_call:            'Cold',
+  whatsapp:             'WA',
+  agendamento_reuniao:  'Agend',
+  follow_up:            'FUP',
+  proposta:             'Prop',
+  reuniao_realizada:    'Reun ✓',
+  reuniao_furada:       'Reun ✗',
+}
+
+const TOOLTIP: Record<string, string> = {
+  empresas_encontradas: 'Empresas encontradas',
+  leads_qualificados:   'Leads qualificados',
+  leads_enviados_crm:   'Leads enviados ao CRM',
+  leads_contatados:     'Leads contatados',
+  respostas:            'Respostas recebidas',
+  interessados:         'Leads interessados',
+  reunioes_marcadas:    'Reuniões marcadas',
+  reunioes_realizadas:  'Reuniões realizadas',
+  oportunidades:        'Oportunidades',
+  ligacoes_feitas:      'Ligações feitas',
+  ligacoes_sucesso:     'Ligações com sucesso',
+  ligacoes_falha:       'Ligações sem sucesso',
+  follow_ups:           'Follow-ups',
+  negocio_fechado:      'Negócio fechado',
+  cold_call:            'Cold Call',
+  whatsapp:             'WhatsApp',
+  agendamento_reuniao:  'Agendamento de reunião',
+  follow_up:            'Follow-up',
+  proposta:             'Proposta',
+  reuniao_realizada:    'Reunião realizada',
+  reuniao_furada:       'Reunião furada',
+}
+
 export default function HistoricoPage() {
-  const [registros,   setRegistros]   = useState<Registro[]>([])
-  const [atividades,  setAtividades]  = useState<Atividade[]>([])
+  const [dias,        setDias]        = useState<DiaResumo[]>([])
   const [loading,     setLoading]     = useState(true)
-  const [confirmId,   setConfirmId]   = useState<string | null>(null)
   const [filtroUsuario, setFiltroUsuario] = useState<FiltroUsuario>('todos')
   const [ordemInversa,  setOrdemInversa]  = useState(false)
 
-  const pendingDelete = useRef<Map<string, { registro: Registro; timerId: ReturnType<typeof setTimeout> }>>(new Map())
-
   useEffect(() => {
     Promise.all([
-      supabase.from('registros').select('*').order('data', { ascending: false }),
-      supabase.from('atividades').select('*').eq('usuario', 'atanael').order('data', { ascending: false }),
-    ]).then(([regRes, atRes]) => {
-      setRegistros((regRes.data as Registro[]) ?? [])
-      setAtividades((atRes.data as Atividade[]) ?? [])
+      supabase.from('eventos').select('*').order('data', { ascending: false }),
+      supabase.from('atividades').select('*').order('data', { ascending: false }),
+    ]).then(([evRes, atRes]) => {
+      const eventos   = (evRes.data  as Evento[])   ?? []
+      const atividades = (atRes.data as Atividade[]) ?? []
+
+      // Merge: atividades têm prioridade se mesma data+usuario
+      const porEventos    = agruparEventos(eventos)
+      const porAtividades = agruparAtividades(atividades)
+
+      // Chaves únicas — atividades sobrescrevem eventos se mesma data+usuario
+      const mapa = new Map<string, DiaResumo>()
+      for (const d of porEventos)    mapa.set(`${d.data}::${d.usuario}`, d)
+      for (const d of porAtividades) mapa.set(`${d.data}::${d.usuario}`, d)
+
+      setDias(Array.from(mapa.values()))
       setLoading(false)
     })
   }, [])
 
-  function iniciarExclusao(id: string) {
-    setConfirmId(null)
-    const registro = registros.find(r => r.id === id)
-    if (!registro) return
-    setRegistros(prev => prev.filter(r => r.id !== id))
-    const timerId = setTimeout(async () => {
-      pendingDelete.current.delete(id)
-      await supabase.from('registros').delete().eq('id', id)
-    }, 5000)
-    pendingDelete.current.set(id, { registro, timerId })
-    showToast('Registro excluído.', {
-      type: 'info',
-      duration: 5000,
-      action: { label: 'DESFAZER', onClick: () => desfazerExclusao(id) },
-    })
-  }
-
-  function desfazerExclusao(id: string) {
-    const entry = pendingDelete.current.get(id)
-    if (!entry) return
-    clearTimeout(entry.timerId)
-    pendingDelete.current.delete(id)
-    setRegistros(prev => {
-      const novo = [...prev, entry.registro]
-      novo.sort((a, b) => (a.data > b.data ? -1 : 1))
-      return novo
-    })
-  }
-
-  const isJP = (r: Registro) => r.usuario === 'joao_pedro'
-
-  const exibidos = registros
-    .filter(r => filtroUsuario === 'todos' || r.usuario === filtroUsuario)
+  const exibidos = dias
+    .filter(d => filtroUsuario === 'todos' || d.usuario === filtroUsuario)
     .slice()
     .sort((a, b) => ordemInversa
       ? (a.data > b.data ? 1 : -1)
       : (a.data > b.data ? -1 : 1)
     )
-
-  // Atividades agrupadas por dia (só mostra se filtro inclui atanael)
-  const atividadesAgrupadas = agruparAtividades(atividades)
-  const mostrarAtividades = filtroUsuario === 'todos' || filtroUsuario === 'atanael'
-
-  // Datas com atividades que NÃO têm registro correspondente na tabela registros
-  const datasComRegistroAT = new Set(
-    registros.filter(r => r.usuario === 'atanael').map(r => r.data)
-  )
 
   const filtroLabels: { key: FiltroUsuario; label: string; color: string }[] = [
     { key: 'todos',      label: 'Todos',      color: 'var(--muted-foreground)' },
@@ -170,138 +190,70 @@ export default function HistoricoPage() {
             <div key={i} style={{ height: '52px', background: 'var(--surface)', border: BORDER, borderRadius: 'var(--radius)' }} />
           ))}
         </div>
+      ) : exibidos.length === 0 ? (
+        <p style={{ fontSize: '0.78rem', color: 'var(--muted-foreground)' }}>Nenhum registro encontrado.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-
-          {/* ── Registros diários ────────────────────────────────────── */}
-          {exibidos.map((r) => {
-            const jp    = isJP(r)
-            const cor   = jp ? '#4DA3F7' : '#2DB881'
-            const nome  = jp ? 'João Pedro' : 'Atanael'
-            const chips = jp ? chipsJP(r) : chipsAT(r)
-            const isConf = confirmId === r.id
+          {exibidos.map((dia) => {
+            const jp  = dia.usuario === 'joao_pedro'
+            const cor = jp ? '#4DA3F7' : '#2DB881'
+            const nome = jp ? 'João Pedro' : 'Atanael'
+            const tipos = Object.entries(dia.contagens).sort((a, b) => b[1] - a[1])
 
             return (
               <div
-                key={r.id}
+                key={`${dia.data}::${dia.usuario}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
                   padding: '0.65rem 0.875rem',
-                  background: isConf ? 'rgba(248,113,113,0.05)' : 'var(--surface)',
-                  border: `1px solid ${isConf ? 'rgba(248,113,113,0.3)' : 'var(--border)'}`,
-                  borderRadius: 'var(--radius)', transition: 'border-color 0.12s',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
                   flexWrap: 'wrap',
                 }}
               >
-                <span style={{ fontSize: '0.72rem', color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '72px' }}>
-                  {fmtData(r.data)}
+                <span style={{
+                  fontSize: '0.72rem', color: 'var(--muted-foreground)',
+                  fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '72px',
+                }}>
+                  {fmtData(dia.data)}
                 </span>
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: cor, flexShrink: 0, minWidth: '80px' }}>
+
+                <span style={{
+                  fontSize: '0.72rem', fontWeight: 600, color: cor,
+                  flexShrink: 0, minWidth: '80px',
+                }}>
                   {nome}
                 </span>
+
                 <div style={{ display: 'flex', gap: '6px', flex: 1, flexWrap: 'wrap' }}>
-                  {chips.map(({ label, tooltip, value }) => (
-                    <span key={label} title={tooltip} style={{
-                      fontSize: '0.65rem', fontWeight: 600,
-                      color: value > 0 ? cor : 'var(--muted-foreground)',
-                      background: value > 0 ? `${cor}14` : 'transparent',
-                      border: `1px solid ${value > 0 ? `${cor}30` : 'var(--border)'}`,
-                      borderRadius: '3px', padding: '2px 7px',
-                      fontVariantNumeric: 'tabular-nums',
-                      fontFamily: "'Segoe UI', system-ui, sans-serif",
-                      opacity: value === 0 ? 0.45 : 1, cursor: 'default',
-                    }}>
-                      {label} {value}
-                    </span>
-                  ))}
-                </div>
-
-                {isConf ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                    <span style={{ fontSize: '0.65rem', color: '#F87171' }}>Excluir?</span>
-                    <button onClick={() => iniciarExclusao(r.id)} style={{ padding: '2px 10px', fontSize: '0.65rem', fontWeight: 700, background: '#F87171', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>Sim</button>
-                    <button onClick={() => setConfirmId(null)} style={{ padding: '2px 10px', fontSize: '0.65rem', background: 'transparent', color: 'var(--muted-foreground)', border: '1px solid var(--border)', borderRadius: '3px', cursor: 'pointer' }}>Não</button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmId(r.id)}
-                    title="Excluir"
-                    style={{
-                      width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'transparent', border: '1px solid var(--border)',
-                      color: 'var(--muted-foreground)', fontSize: '0.65rem',
-                      cursor: 'pointer', transition: 'all 0.12s',
-                    }}
-                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.1)'; e.currentTarget.style.borderColor = '#F87171'; e.currentTarget.style.color = '#F87171' }}
-                    onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted-foreground)' }}
-                  >×</button>
-                )}
-              </div>
-            )
-          })}
-
-          {/* ── Atividades do Atanael (dias sem registro na tabela registros) ── */}
-          {mostrarAtividades && Array.from(atividadesAgrupadas.entries())
-            .filter(([data]) => !datasComRegistroAT.has(data))
-            .sort(([a], [b]) => ordemInversa ? (a > b ? 1 : -1) : (a > b ? -1 : 1))
-            .map(([data, contagens]) => {
-              const tipos = Object.entries(contagens).sort((a, b) => b[1] - a[1])
-              return (
-                <div
-                  key={`at-${data}`}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.75rem',
-                    padding: '0.65rem 0.875rem',
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius)',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <span style={{ fontSize: '0.72rem', color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '72px' }}>
-                    {fmtData(data)}
-                  </span>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#2DB881', flexShrink: 0, minWidth: '80px' }}>
-                    Atanael
-                  </span>
-                  <div style={{ display: 'flex', gap: '6px', flex: 1, flexWrap: 'wrap' }}>
-                    {tipos.map(([tipo, count]) => (
-                      <span key={tipo} title={LABEL_ATIVIDADE[tipo as keyof typeof LABEL_ATIVIDADE]} style={{
+                  {tipos.map(([tipo, count]) => {
+                    const corChip = jp ? cor : (COR_ATIVIDADE[tipo as keyof typeof COR_ATIVIDADE] ?? cor)
+                    const labelCurto = LABEL_CURTO[tipo] ?? tipo
+                    const tooltip    = TOOLTIP[tipo] ?? tipo
+                    return (
+                      <span key={tipo} title={tooltip} style={{
                         fontSize: '0.65rem', fontWeight: 600,
-                        color: COR_ATIVIDADE[tipo as keyof typeof COR_ATIVIDADE] ?? '#2DB881',
-                        background: `${COR_ATIVIDADE[tipo as keyof typeof COR_ATIVIDADE] ?? '#2DB881'}14`,
-                        border: `1px solid ${COR_ATIVIDADE[tipo as keyof typeof COR_ATIVIDADE] ?? '#2DB881'}30`,
+                        color: corChip,
+                        background: `${corChip}14`,
+                        border: `1px solid ${corChip}30`,
                         borderRadius: '3px', padding: '2px 7px',
                         fontVariantNumeric: 'tabular-nums',
                         fontFamily: "'Segoe UI', system-ui, sans-serif",
                         cursor: 'default',
                       }}>
-                        {tipo === 'cold_call' ? 'Cold' :
-                         tipo === 'whatsapp' ? 'WA' :
-                         tipo === 'agendamento_reuniao' ? 'Agend' :
-                         tipo === 'follow_up' ? 'FUP' :
-                         tipo === 'proposta' ? 'Prop' :
-                         tipo === 'negocio_fechado' ? 'Fechado' :
-                         tipo === 'reuniao_realizada' ? 'Reun ✓' :
-                         tipo === 'reuniao_furada' ? 'Reun ✗' : tipo} {count}
+                        {labelCurto} {count}
                       </span>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
-              )
-            })
-          }
+              </div>
+            )
+          })}
 
-          {exibidos.length === 0 && (!mostrarAtividades || atividadesAgrupadas.size === 0) && (
-            <p style={{ fontSize: '0.78rem', color: 'var(--muted-foreground)' }}>Nenhum registro encontrado.</p>
-          )}
-
-          {(exibidos.length > 0 || (mostrarAtividades && atividadesAgrupadas.size > 0)) && (
-            <p style={{ fontSize: '0.62rem', color: 'var(--muted-foreground)', marginTop: '0.75rem', opacity: 0.6 }}>
-              {exibidos.length} registro{exibidos.length !== 1 ? 's' : ''} · Para editar, vá em Registrar e selecione a data.
-            </p>
-          )}
+          <p style={{ fontSize: '0.62rem', color: 'var(--muted-foreground)', marginTop: '0.75rem', opacity: 0.6 }}>
+            {exibidos.length} dia{exibidos.length !== 1 ? 's' : ''} com atividade
+          </p>
         </div>
       )}
     </div>
