@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: "Métricas de prospecção de leads",
 };
 
-// Roda antes de qualquer paint — evita flash de tema errado
-const themeInitScript = `(function(){try{var t=localStorage.getItem('pv-theme')||'dark';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.classList.add(r);}catch(e){}})();`;
+// Roda antes de qualquer paint — evita flash de tema/densidade errados
+const themeInitScript = `(function(){try{var t=localStorage.getItem('pv-theme')||'dark';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.classList.add(r);var d=localStorage.getItem('pv-density')||'comfortable';document.documentElement.setAttribute('data-density',d);}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -28,7 +28,7 @@ export default function RootLayout({
           <CacheWarmer />
           <ToastContainer />
           <Navbar />
-          <main style={{ maxWidth: "76rem", margin: "0 auto", padding: "2.5rem 2rem" }}>{children}</main>
+          <main className="page-fade" style={{ maxWidth: "76rem", margin: "0 auto", padding: "2.5rem 2rem" }}>{children}</main>
         </ThemeProvider>
       </body>
     </html>

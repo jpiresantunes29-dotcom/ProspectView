@@ -6,6 +6,7 @@ import { useRef, useState, useLayoutEffect, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useTheme, type Theme } from '@/lib/theme'
 import { prefetchPage } from '@/lib/queryCache'
+import { getDensity, saveDensity, type Density } from '@/lib/density'
 
 // Links principais — sempre visíveis na navbar (sem scroll)
 const mainLinks = [
@@ -69,6 +70,10 @@ export default function Navbar() {
   const [registradoHoje, setRegistradoHoje] = useState({ joao: false, atanael: false })
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { theme, setTheme } = useTheme()
+  const [density, setDensityState] = useState<Density>('comfortable')
+
+  useEffect(() => { setDensityState(getDensity()) }, [])
+  const changeDensity = (d: Density) => { setDensityState(d); saveDensity(d) }
 
   useLayoutEffect(() => {
     const activeIdx = mainLinks.findIndex((l) => l.href === pathname)
@@ -174,12 +179,17 @@ export default function Navbar() {
             {indicator.ready && (
               <div style={{
                 position: 'absolute',
-                bottom: '-1px',
-                left: indicator.left,
-                width: indicator.width,
-                height: '2px',
-                background: '#0078D4',
-                transition: 'left 0.2s ease, width 0.2s ease',
+                top: '50%',
+                left: indicator.left + 4,
+                width: indicator.width - 8,
+                height: '26px',
+                marginTop: '-13px',
+                background: 'rgba(0,120,212,0.14)',
+                border: '1px solid rgba(0,120,212,0.35)',
+                borderRadius: '13px',
+                transition: 'left 0.22s cubic-bezier(0.4,0,0.2,1), width 0.22s cubic-bezier(0.4,0,0.2,1)',
+                pointerEvents: 'none',
+                zIndex: 0,
               }} />
             )}
 
@@ -192,20 +202,27 @@ export default function Navbar() {
                     ref={(el) => { linkRefs.current[i] = el }}
                     style={{
                       position: 'relative',
-                      padding: '0 10px',
+                      zIndex: 1,
+                      padding: '0 14px',
                       height: '48px',
                       display: 'flex',
                       alignItems: 'center',
                       fontSize: '0.7rem',
-                      fontWeight: isActive ? 600 : 400,
+                      fontWeight: isActive ? 600 : 500,
                       letterSpacing: '0.05em',
                       textTransform: 'uppercase',
-                      color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      color: isActive ? '#4DA3F7' : 'var(--muted-foreground)',
                       textDecoration: 'none',
-                      transition: 'color 0.1s ease',
+                      transition: 'color 0.15s ease',
                       whiteSpace: 'nowrap',
                     }}
-                    onMouseEnter={() => prefetchPage(link.href)}
+                    onMouseEnter={(e) => {
+                      prefetchPage(link.href)
+                      if (!isActive) (e.currentTarget as HTMLAnchorElement).style.color = 'var(--foreground)'
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) (e.currentTarget as HTMLAnchorElement).style.color = 'var(--muted-foreground)'
+                    }}
                   >
                     {link.label}
                   </Link>
@@ -534,6 +551,41 @@ export default function Navbar() {
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
                   )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Divisor */}
+          <div style={{ height: '1px', background: 'var(--border)', margin: '1.25rem 0' }} />
+
+          {/* Densidade */}
+          <div style={{ marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>
+              Densidade
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {(['comfortable', 'compact'] as Density[]).map((d) => {
+              const active = density === d
+              return (
+                <button
+                  key={d}
+                  onClick={() => changeDensity(d)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 0.5rem',
+                    background: active ? 'var(--accent)' : 'transparent',
+                    border: `1px solid ${active ? '#0078D4' : 'var(--border)'}`,
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    color: active ? 'var(--foreground)' : 'var(--muted-foreground)',
+                    fontSize: '0.72rem',
+                    fontWeight: active ? 600 : 400,
+                    fontFamily: "'Segoe UI', system-ui, sans-serif",
+                  }}
+                >
+                  {d === 'comfortable' ? 'Confortável' : 'Compacta'}
                 </button>
               )
             })}

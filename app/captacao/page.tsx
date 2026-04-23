@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import type { Registro } from '@/lib/supabase'
 import { fetchRegistros } from '@/lib/queryCache'
 import { somarRegistros, pct, diasUteis, porDia } from '@/lib/metrics'
@@ -8,8 +8,18 @@ import MetricCard from '@/components/metric-card'
 import { MetricCardSkeleton } from '@/components/skeleton'
 import FiltroPeriodo, { periodoParaDatas, periodoAnteriorDatas, type Periodo } from '@/components/filtro-periodo'
 import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Line } from 'recharts'
-import AnimatedTitle from '@/components/animated-title'
+import PageHeader from '@/components/ui/page-header'
+import EmptyState from '@/components/ui/empty-state'
+import DrillDownPanel, { type DrillRow } from '@/components/dashboard/drill-down-panel'
 import { getMetas, type Metas } from '@/lib/metas'
+
+type KpiKey = 'empresas_encontradas' | 'leads_qualificados' | 'leads_enviados_crm'
+
+const KPI_LABELS: Record<KpiKey, string> = {
+  empresas_encontradas: 'Empresas encontradas',
+  leads_qualificados: 'Leads qualificados',
+  leads_enviados_crm: 'Enviados ao CRM',
+}
 
 const tooltipStyle = {
   fontSize: 12,
@@ -30,22 +40,11 @@ function FunnelArrow({ taxa }: { taxa: string }) {
       flexShrink: 0,
       gap: '6px',
     }}>
-      <span style={{
-        fontSize: '0.85rem',
-        fontWeight: 700,
-        color: '#F0A830',
-        fontVariantNumeric: 'tabular-nums',
-      }}>{taxa}</span>
+      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#F0A830', fontVariantNumeric: 'tabular-nums' }}>{taxa}</span>
       <svg width="28" height="8" viewBox="0 0 28 8" fill="none">
         <path d="M0 4H22M22 4L18 1M22 4L18 7" stroke="var(--border-hover)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span style={{
-        fontSize: '0.52rem',
-        letterSpacing: '0.07em',
-        textTransform: 'uppercase',
-        color: 'var(--muted-foreground)',
-        fontWeight: 500,
-      }}>conversão</span>
+      <span style={{ fontSize: '0.52rem', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--muted-foreground)', fontWeight: 500 }}>conversão</span>
     </div>
   )
 }
@@ -56,10 +55,9 @@ export default function CaptacaoPage() {
   const [prevRegistros, setPrevRegistros] = useState<Registro[]>([])
   const [loading, setLoading] = useState(true)
   const [metas, setMetas] = useState<Metas | null>(null)
+  const [drillKpi, setDrillKpi] = useState<KpiKey | null>(null)
 
-  useEffect(() => {
-    setMetas(getMetas())
-  }, [])
+  useEffect(() => { setMetas(getMetas()) }, [])
 
   useEffect(() => {
     async function fetchData() {
@@ -88,29 +86,42 @@ export default function CaptacaoPage() {
     enviados: r.leads_enviados_crm,
   }))
 
+  const drillRows: DrillRow[] = useMemo(() => {
+    if (!drillKpi) return []
+    return [...registros]
+      .filter((r) => (r[drillKpi] ?? 0) > 0)
+      .sort((a, b) => b.data.localeCompare(a.data))
+      .map((r) => ({
+        data: r.data.slice(5),
+        label: KPI_LABELS[drillKpi],
+        color: '#4DA3F7',
+        value: r[drillKpi] ?? 0,
+        detail: `${r.data} · João Pedro`,
+      }))
+  }, [drillKpi, registros])
+
+  const drillTotal = drillKpi ? t[drillKpi] : undefined
+
   return (
     <div>
-      <div style={{
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        marginBottom: '3rem',
-        paddingBottom: '2rem',
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <div>
-          <p className="section-label" style={{ marginBottom: '0.75rem' }}>João Pedro</p>
-          <AnimatedTitle text="Captação" />
-        </div>
-        <FiltroPeriodo value={periodo} onChange={setPeriodo} />
-      </div>
+      <PageHeader
+        eyebrow="João Pedro"
+        title="Captação"
+        subtitle="Métricas de prospecção no período selecionado"
+        actions={<FiltroPeriodo value={periodo} onChange={setPeriodo} />}
+      />
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0 2.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
           {Array.from({ length: 3 }).map((_, i) => <MetricCardSkeleton key={i} />)}
         </div>
+      ) : registros.length === 0 ? (
+        <EmptyState
+          title="Nenhum registro no período"
+          description="Ainda não há registros de captação para este intervalo. Registre pela página Registrar."
+        />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
 
           {/* Funil de captação */}
           <div style={{ display: 'flex', alignItems: 'stretch' }}>
@@ -123,6 +134,7 @@ export default function CaptacaoPage() {
                 prev={prevT.empresas_encontradas}
                 meta={metas?.empresas_encontradas}
                 dias={dias}
+                onClick={() => setDrillKpi('empresas_encontradas')}
               />
             </div>
 
@@ -137,6 +149,7 @@ export default function CaptacaoPage() {
                 prev={prevT.leads_qualificados}
                 meta={metas?.leads_qualificados}
                 dias={dias}
+                onClick={() => setDrillKpi('leads_qualificados')}
               />
             </div>
 
@@ -151,18 +164,19 @@ export default function CaptacaoPage() {
                 prev={prevT.leads_enviados_crm}
                 meta={metas?.leads_enviados_crm}
                 dias={dias}
+                onClick={() => setDrillKpi('leads_enviados_crm')}
               />
             </div>
           </div>
 
           {graficoDiario.length > 0 && (
-            <section>
-              <p className="section-label" style={{ marginBottom: '1.5rem' }}>Captação por dia</p>
-              <ResponsiveContainer width="100%" height={200}>
+            <section className="uci-card" style={{ padding: '1.5rem' }}>
+              <p className="section-label" style={{ marginBottom: '1.25rem' }}>Captação por dia</p>
+              <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={graficoDiario} barCategoryGap="40%">
                   <CartesianGrid strokeDasharray="1 4" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="data" tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="data" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: '#ffffff05' }} />
                   <Bar dataKey="encontrados" name="Encontrados" fill="#60A5FA" opacity={0.35} radius={[2, 2, 0, 0]} />
                   <Line type="monotone" dataKey="enviados" name="Enviados ao CRM" stroke="#60A5FA" strokeWidth={2} dot={false} />
@@ -173,6 +187,15 @@ export default function CaptacaoPage() {
 
         </div>
       )}
+
+      <DrillDownPanel
+        open={drillKpi !== null}
+        onClose={() => setDrillKpi(null)}
+        title={drillKpi ? KPI_LABELS[drillKpi] : ''}
+        subtitle={`Período: ${periodo} · João Pedro`}
+        total={drillTotal}
+        rows={drillRows}
+      />
     </div>
   )
 }

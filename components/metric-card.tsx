@@ -22,9 +22,10 @@ type Props = {
   meta?: number
   dias?: number
   tooltip?: string
+  onClick?: () => void
 }
 
-export default function MetricCard({ label, value, sub, color = 'default', prev, meta, dias, tooltip }: Props) {
+export default function MetricCard({ label, value, sub, color = 'default', prev, meta, dias, tooltip, onClick }: Props) {
   const numericValue = typeof value === 'number' ? value : NaN
   const animated = useCountUp(isNaN(numericValue) ? 0 : numericValue)
   const displayValue = typeof value === 'number' ? animated : value
@@ -47,10 +48,18 @@ export default function MetricCard({ label, value, sub, color = 'default', prev,
 
   const accentColor = colorMap[color]
 
+  const clickable = typeof onClick === 'function'
+
   return (
     <div
-      className="metric-card"
-      style={{ '--card-accent': accentColor } as React.CSSProperties}
+      className={`metric-card${clickable ? ' uci-card--clickable' : ''}`}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={clickable ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick!() }
+      } : undefined}
+      style={{ '--card-accent': accentColor, cursor: clickable ? 'pointer' : 'default' } as React.CSSProperties}
     >
       {/* Label com dot colorido */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.875rem' }}>

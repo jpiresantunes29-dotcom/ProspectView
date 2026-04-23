@@ -18,17 +18,18 @@ export function Skeleton({ w = '100%', h = '1rem', style }: SkeletonProps) {
 export function MetricCardSkeleton() {
   return (
     <div style={{
-      background: '#0F1A2E',
-      border: '1px solid #1A2D45',
-      borderRadius: '4px',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-md)',
       padding: '1.25rem 1.5rem',
       position: 'relative',
       overflow: 'hidden',
+      boxShadow: 'var(--shadow-sm)',
     }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: '#1A2D45', borderRadius: '4px 0 0 4px' }} />
       <Skeleton h="0.55rem" w="45%" style={{ marginBottom: '0.875rem' }} />
-      <Skeleton h="2.8rem" w="50%" />
-      <Skeleton h="0.5rem" w="30%" style={{ marginTop: '0.5rem' }} />
+      <Skeleton h="2.4rem" w="50%" />
+      <Skeleton h="0.5rem" w="30%" style={{ marginTop: '0.6rem' }} />
+      <Skeleton h="2px" w="100%" style={{ marginTop: '1rem' }} />
     </div>
   )
 }
