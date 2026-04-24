@@ -178,78 +178,59 @@ export default function HistoricoPage() {
           title="Nenhum registro encontrado"
           description="Nao existem atividades compativeis com o filtro selecionado neste momento."
         />
-      ) : (
-        <section className="uci-card" style={{ padding: '1.25rem 1.5rem' }}>
-          <div className="section-hdr">
-            <p className="section-label">
-              Dias encontrados - {exibidos.length} dia{exibidos.length !== 1 ? 's' : ''} com atividade
-            </p>
-          </div>
-
-          <div className="historico-list">
-            {exibidos.map((dia) => {
-              const jp = dia.usuario === 'joao_pedro'
-              const cor = jp ? '#4DA3F7' : '#2DB881'
-              const nome = jp ? 'Joao Pedro' : 'Atanael'
-              const tipos = Object.entries(dia.contagens).sort((a, b) => b[1] - a[1])
-
-              return (
-                <div key={`${dia.data}::${dia.usuario}`} className="historico-row">
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      color: 'var(--muted-foreground)',
-                      fontVariantNumeric: 'tabular-nums',
-                      flexShrink: 0,
-                      minWidth: '90px',
-                    }}
-                  >
-                    {fmtData(dia.data)}
-                  </span>
-
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 600,
-                      color: cor,
-                      flexShrink: 0,
-                      minWidth: '96px',
-                    }}
-                  >
-                    {nome}
-                  </span>
-
-                  <div className="chips" style={{ flex: 1 }}>
-                    {tipos.map(([tipo, count]) => {
-                      const corChip = jp ? cor : (COR_ATIVIDADE[tipo as keyof typeof COR_ATIVIDADE] ?? cor)
-                      const labelCurto = LABEL_CURTO[tipo] ?? tipo
-                      const tooltip = TOOLTIP[tipo] ?? tipo
-
-                      return (
-                        <span
-                          key={tipo}
-                          title={tooltip}
-                          className="chip"
-                          style={{
-                            color: corChip,
-                            background: `${corChip}14`,
-                            border: `1px solid ${corChip}30`,
-                            cursor: 'default',
-                          }}
-                        >
-                          <span className="chip-dot" style={{ background: corChip }} />
-                          {labelCurto}
-                          <span className="chip-count" style={{ color: corChip }}>{count}</span>
-                        </span>
-                      )
-                    })}
-                  </div>
+      ) : (() => {
+        const grupos: [string, DiaResumo[]][] = []
+        let lastDate = ''
+        for (const dia of exibidos) {
+          if (dia.data !== lastDate) { grupos.push([dia.data, []]); lastDate = dia.data }
+          grupos[grupos.length - 1][1].push(dia)
+        }
+        return (
+          <section className="uci-card" style={{ padding: '1.25rem 1.5rem' }}>
+            <div className="section-hdr">
+              <p className="section-label">
+                {exibidos.length} dia{exibidos.length !== 1 ? 's' : ''} com atividade
+              </p>
+            </div>
+            {grupos.map(([data, dias]) => (
+              <div key={data} className="historico-group">
+                <div className="historico-date-header">
+                  {new Date(`${data}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                 </div>
-              )
-            })}
-          </div>
-        </section>
-      )}
+                <div className="historico-list">
+                  {dias.map((dia) => {
+                    const jp = dia.usuario === 'joao_pedro'
+                    const cor = jp ? '#4DA3F7' : '#2DB881'
+                    const nome = jp ? 'João Pedro' : 'Atanael'
+                    const tipos = Object.entries(dia.contagens).sort((a, b) => b[1] - a[1])
+                    return (
+                      <div key={`${dia.data}::${dia.usuario}`} className="historico-row">
+                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: cor, flexShrink: 0, minWidth: '96px' }}>
+                          {nome}
+                        </span>
+                        <div className="chips" style={{ flex: 1 }}>
+                          {tipos.map(([tipo, count]) => {
+                            const corChip = jp ? cor : (COR_ATIVIDADE[tipo as keyof typeof COR_ATIVIDADE] ?? cor)
+                            const labelCurto = LABEL_CURTO[tipo] ?? tipo
+                            const tooltip = TOOLTIP[tipo] ?? tipo
+                            return (
+                              <span key={tipo} title={tooltip} className="chip" style={{ color: corChip, background: `${corChip}14`, border: `1px solid ${corChip}30`, cursor: 'default' }}>
+                                <span className="chip-dot" style={{ background: corChip }} />
+                                {labelCurto}
+                                <span className="chip-count" style={{ color: corChip }}>{count}</span>
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </section>
+        )
+      })()}
     </div>
   )
 }

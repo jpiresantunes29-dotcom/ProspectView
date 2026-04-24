@@ -35,7 +35,9 @@ export default function RootLayout({
           <ToastContainer />
           <Sidebar />
           <main className="app-main page-fade">
-            {children}
+            <div className="page-wrap">
+              {children}
+            </div>
           </main>
         </ThemeProvider>
       </body>

@@ -14,6 +14,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Legend,
 } from 'recharts'
+import * as XLSX from 'xlsx'
 import PageHeader from '@/components/ui/page-header'
 import EmptyState from '@/components/ui/empty-state'
 import FilterPill from '@/components/ui/filter-pill'
@@ -187,6 +188,27 @@ export default function DashboardPage() {
 
   const semDados = !loading && registrosJP.length === 0 && atividadesAT.length === 0
 
+  function exportarExcel() {
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Métrica', 'Responsável', 'Valor'],
+      ['Empresas encontradas', 'João Pedro', totaisJP.empresas_encontradas],
+      ['Leads qualificados', 'João Pedro', totaisJP.leads_qualificados],
+      ['Enviados ao CRM', 'João Pedro', totaisJP.leads_enviados_crm],
+      ['Atividades realizadas', 'Atanael', totalAT],
+      ['Negócios fechados', 'Atanael', negociosFechadosAT],
+    ]), 'KPIs')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Data', 'Empresas encontradas', 'Leads qualificados', 'Enviados ao CRM'],
+      ...registrosJP.map((r) => [r.data, r.empresas_encontradas ?? 0, r.leads_qualificados ?? 0, r.leads_enviados_crm ?? 0]),
+    ]), 'Registros JP')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Tipo', 'Quantidade'],
+      ...Object.entries(totalPorTipoAT).map(([k, v]) => [LABEL_ATIVIDADE[k as TipoAtividade] ?? k, v]),
+    ]), 'Atividades AT')
+    XLSX.writeFile(wb, `ProspectView_${periodo}.xlsx`)
+  }
+
   return (
     <div>
       <PageHeader
@@ -194,22 +216,31 @@ export default function DashboardPage() {
         title="Dashboard"
         subtitle={`${periodoLabel(periodo)} · João Pedro + Atanael`}
         actions={
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {(['7d', '30d', '90d'] as Periodo[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriodo(p)}
-                className="uci-btn"
-                style={{
-                  padding: '6px 12px',
-                  border: `1px solid ${periodo === p ? '#0078D4' : 'var(--border)'}`,
-                  background: periodo === p ? 'rgba(0,120,212,0.1)' : 'transparent',
-                  color: periodo === p ? '#4DA3F7' : 'var(--muted-foreground)',
-                }}
-              >
-                {p}
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', background: 'var(--surface-elevated)', border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden' }}>
+              {(['7d', '30d', '90d'] as Periodo[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriodo(p)}
+                  className={`period-seg${periodo === p ? ' period-seg--active' : ''}`}
+                >
+                  {p.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <button
+              className="export-btn"
+              onClick={exportarExcel}
+              disabled={loading || semDados}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              Exportar Excel
+            </button>
           </div>
         }
         filters={<FilterPill label="Período" value={periodoLabel(periodo)} />}

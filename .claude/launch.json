@@ -6,7 +6,7 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "cwd": "C:\\Projetos\\Gestao_Leads",
-      "port": 3000
+      "autoPort": true
     }
   ]
 }
