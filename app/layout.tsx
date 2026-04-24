@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/navbar";
+import Sidebar from "@/components/sidebar";
 import CacheWarmer from "@/components/cache-warmer";
 import { ThemeProvider } from "@/lib/theme";
 import { ToastContainer } from "@/components/toast";
@@ -10,7 +10,6 @@ export const metadata: Metadata = {
   description: "Métricas de prospecção de leads",
 };
 
-// Roda antes de qualquer paint — evita flash de tema/densidade errados
 const themeInitScript = `(function(){try{var t=localStorage.getItem('pv-theme')||'dark';var r=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.classList.add(r);var d=localStorage.getItem('pv-density')||'comfortable';document.documentElement.setAttribute('data-density',d);}catch(e){}})();`;
 
 export default function RootLayout({
@@ -23,12 +22,21 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
+      <body
+        style={{
+          display: "flex",
+          minHeight: "100vh",
+          background: "var(--background)",
+          color: "var(--foreground)",
+        }}
+      >
         <ThemeProvider>
           <CacheWarmer />
           <ToastContainer />
-          <Navbar />
-          <main className="page-fade" style={{ maxWidth: "76rem", margin: "0 auto", padding: "2.5rem 2rem" }}>{children}</main>
+          <Sidebar />
+          <main className="app-main page-fade">
+            {children}
+          </main>
         </ThemeProvider>
       </body>
     </html>

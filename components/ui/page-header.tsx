@@ -12,43 +12,16 @@ type Props = {
 
 export default function PageHeader({ eyebrow, title, subtitle, actions, filters }: Props) {
   return (
-    <div
-      style={{
-        marginBottom: '2rem',
-        paddingBottom: '1.25rem',
-        borderBottom: '1px solid var(--border)',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: '1rem',
-          flexWrap: 'wrap',
-        }}
-      >
+    <div className="page-header">
+      <div className="page-header-row">
         <div style={{ minWidth: 0 }}>
           {eyebrow && (
             <p className="section-label" style={{ marginBottom: '0.5rem' }}>
               {eyebrow}
             </p>
           )}
-          <h1 className="page-title" style={{ fontSize: '1.5rem', fontWeight: 600 }}>
-            {title}
-          </h1>
-          {subtitle && (
-            <p
-              style={{
-                marginTop: '0.4rem',
-                fontSize: '0.78rem',
-                color: 'var(--muted-foreground)',
-                fontFamily: "'Segoe UI', system-ui, sans-serif",
-              }}
-            >
-              {subtitle}
-            </p>
-          )}
+          <h1 className="page-title">{title}</h1>
+          {subtitle && <p className="page-subtitle">{subtitle}</p>}
         </div>
         {actions && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>

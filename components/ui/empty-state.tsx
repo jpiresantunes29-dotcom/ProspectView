@@ -17,7 +17,7 @@ export default function EmptyState({ icon, title, description, action }: Props) 
           style={{
             width: '44px',
             height: '44px',
-            borderRadius: '50%',
+            borderRadius: '12px',
             background: 'var(--subtle-bg)',
             border: '1px solid var(--border)',
             display: 'flex',
@@ -31,7 +31,7 @@ export default function EmptyState({ icon, title, description, action }: Props) 
       )}
       <p
         style={{
-          fontSize: '0.85rem',
+          fontSize: '0.95rem',
           fontWeight: 600,
           color: 'var(--foreground)',
           fontFamily: "'Segoe UI', system-ui, sans-serif",
@@ -42,9 +42,9 @@ export default function EmptyState({ icon, title, description, action }: Props) 
       {description && (
         <p
           style={{
-            fontSize: '0.72rem',
+            fontSize: '0.74rem',
             color: 'var(--muted-foreground)',
-            maxWidth: '340px',
+            maxWidth: '380px',
             lineHeight: 1.5,
           }}
         >
