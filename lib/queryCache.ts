@@ -1,15 +1,17 @@
 /**
  * queryCache.ts
- * Cache de queries Supabase em sessionStorage com TTL de 5 minutos.
- * Elimina re-fetches desnecessários ao navegar entre páginas.
- * Inclui warmup automático e prefetch por página.
+ * Cache simples de queries de `registros` em sessionStorage com TTL 5 min.
+ * Usado pelas páginas que leem registros de João Pedro.
+ *
+ * Sem warmup automático (era desperdício de queries no startup) e sem
+ * referências a rotas removidas. Prefetch on-hover continua disponível.
  */
 
 import { supabase } from '@/lib/supabase'
 import type { Registro } from '@/lib/supabase'
 import { periodoParaDatas, periodoAnteriorDatas } from '@/components/filtro-periodo'
 
-const TTL_MS = 5 * 60 * 1000 // 5 minutos
+const TTL_MS = 5 * 60 * 1000
 
 interface CacheEntry {
   data: Registro[]
@@ -40,14 +42,10 @@ function writeCache(key: string, data: Registro[]): void {
     const entry: CacheEntry = { data, ts: Date.now() }
     sessionStorage.setItem(key, JSON.stringify(entry))
   } catch {
-    // sessionStorage pode estar indisponível (SSR, modo privado)
+    // sessionStorage indisponível (SSR / modo privado) — ignorar
   }
 }
 
-/**
- * Busca registros do Supabase com cache automático.
- * Se o mesmo intervalo já foi buscado nos últimos 2 minutos, retorna do cache.
- */
 export async function fetchRegistros(
   inicio: string,
   fim: string,
@@ -74,9 +72,6 @@ export async function fetchRegistros(
   return result
 }
 
-/**
- * Invalida todo o cache de registros (usar após salvar novos dados).
- */
 export function invalidateRegistrosCache(): void {
   try {
     const keys: string[] = []
@@ -90,46 +85,19 @@ export function invalidateRegistrosCache(): void {
   }
 }
 
-// ─── Prefetch por página ─────────────────────────────────────────────────────
-
 /**
- * Mapeia cada rota para as queries que ela vai precisar.
- * Chamado no hover do link (100-200ms antes do clique).
+ * Prefetch on-hover dos links da navbar.
+ * Chamado quando o mouse entra num link, ~100-200ms antes do clique.
+ * Mapeia rotas existentes hoje para a query que cada uma vai precisar.
  */
 export function prefetchPage(href: string): void {
-  const periodo = '30d'
-  const { inicio, fim } = periodoParaDatas(periodo)
-  const { inicio: pI, fim: pF } = periodoAnteriorDatas(periodo)
-
-  if (href === '/') {
-    // Dashboard: todos os usuários, período atual + anterior
-    fetchRegistros(inicio, fim).catch(() => {})
-    fetchRegistros(pI, pF).catch(() => {})
-  } else if (href === '/captacao') {
-    fetchRegistros(inicio, fim, 'joao_pedro').catch(() => {})
-    fetchRegistros(pI, pF, 'joao_pedro').catch(() => {})
-  } else if (href === '/contato') {
-    fetchRegistros(inicio, fim, 'atanael').catch(() => {})
-    fetchRegistros(pI, pF, 'atanael').catch(() => {})
-  } else if (href === '/funil') {
-    fetchRegistros(inicio, fim).catch(() => {})
-  }
-  // /historico, /metas, /registrar: sem queries de registros pesadas
-}
-
-/**
- * Aquece o cache para todas as páginas principais com o período padrão (30d).
- * Chamado silenciosamente no startup do app — dados prontos antes do primeiro clique.
- */
-export function warmupCache(): void {
   const { inicio, fim } = periodoParaDatas('30d')
   const { inicio: pI, fim: pF } = periodoAnteriorDatas('30d')
 
-  // Dispara em background, sem await, sem bloquear nada
-  fetchRegistros(inicio, fim).catch(() => {})
-  fetchRegistros(pI, pF).catch(() => {})
-  fetchRegistros(inicio, fim, 'joao_pedro').catch(() => {})
-  fetchRegistros(pI, pF, 'joao_pedro').catch(() => {})
-  fetchRegistros(inicio, fim, 'atanael').catch(() => {})
-  fetchRegistros(pI, pF, 'atanael').catch(() => {})
+  if (href === '/' || href === '/captacao') {
+    fetchRegistros(inicio, fim, 'joao_pedro').catch(() => {})
+    fetchRegistros(pI, pF, 'joao_pedro').catch(() => {})
+  }
+  // /contato, /historico, /metas, /metricas-tier, /diagnostico, /registrar:
+  // não dependem de cache de registros JP (leem atividades direto ou usam localStorage).
 }

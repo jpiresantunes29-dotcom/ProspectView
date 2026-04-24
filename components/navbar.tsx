@@ -10,7 +10,7 @@ import { getDensity, saveDensity, type Density } from '@/lib/density'
 
 // Links principais — sempre visíveis na navbar (sem scroll)
 const mainLinks = [
-  { href: '/',          label: 'Dashboard', tip: 'Atividades registradas por Atanael' },
+  { href: '/',          label: 'Dashboard', tip: 'Visão consolidada — João Pedro + Atanael' },
   { href: '/captacao',  label: 'Captação',  tip: 'Métricas de prospecção — João Pedro' },
   { href: '/contato',   label: 'Contato',   tip: 'Registro de atividades — Atanael' },
   { href: '/historico', label: 'Histórico', tip: 'Todos os registros por data' },

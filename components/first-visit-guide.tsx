@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-const STORAGE_KEY = 'pv-guide-dismissed'
+const STORAGE_KEY = 'pv-guide-dismissed-v3'
 
 export default function FirstVisitGuide() {
   const [visible, setVisible] = useState(false)
@@ -23,67 +23,91 @@ export default function FirstVisitGuide() {
 
   return (
     <div style={{
-      marginBottom: '2rem',
-      padding: '1.25rem 1.5rem',
+      marginBottom: '1.5rem',
+      padding: '1rem 1.25rem',
       background: 'var(--surface)',
-      border: '1px solid #2A5A8A',
-      borderRadius: '6px',
+      border: '1px solid rgba(0,120,212,0.4)',
+      borderRadius: 'var(--radius-md)',
+      boxShadow: 'var(--shadow-sm)',
       display: 'flex',
       alignItems: 'flex-start',
-      gap: '1.25rem',
+      gap: '1rem',
     }}>
-      {/* Ícone */}
       <div style={{
         width: '32px', height: '32px', borderRadius: '6px',
-        background: 'rgba(77,163,247,0.12)', border: '1px solid rgba(77,163,247,0.25)',
+        background: 'rgba(0,120,212,0.12)', border: '1px solid rgba(0,120,212,0.3)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4DA3F7" strokeWidth="1.75">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4DA3F7" strokeWidth="1.75" aria-hidden>
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
           <line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
       </div>
 
-      {/* Conteúdo */}
-      <div style={{ flex: 1 }}>
-        <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--foreground)', marginBottom: '0.75rem', letterSpacing: '0.02em' }}>
-          Como usar o ProspectView
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--foreground)', marginBottom: '0.5rem' }}>
+          Bem-vindo ao ProspectView
         </p>
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-          {[
-            { num: '1', title: 'Registre diariamente', desc: 'João Pedro e Atanael registram suas atividades do dia em', link: '/registrar', linkLabel: 'Registrar' },
-            { num: '2', title: 'Acompanhe por pessoa', desc: 'Captação mostra as métricas do João Pedro. Contato mostra as do Atanael.', link: null, linkLabel: null },
-            { num: '3', title: 'Analise o pipeline', desc: 'Dashboard mostra a visão geral. Funil mostra onde os leads estão sendo perdidos.', link: null, linkLabel: null },
-          ].map(({ num, title, desc, link, linkLabel }) => (
-            <div key={num} style={{ display: 'flex', gap: '0.75rem', minWidth: '200px', flex: 1 }}>
-              <div style={{
-                width: '20px', height: '20px', borderRadius: '50%',
-                background: 'rgba(77,163,247,0.15)', border: '1px solid rgba(77,163,247,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.62rem', fontWeight: 700, color: '#4DA3F7', flexShrink: 0, marginTop: '1px',
-              }}>{num}</div>
-              <div>
-                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '0.2rem' }}>{title}</p>
-                <p style={{ fontSize: '0.68rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-                  {desc}{' '}
-                  {link && <Link href={link} style={{ color: '#4DA3F7', textDecoration: 'underline' }}>{linkLabel}</Link>}
-                </p>
-              </div>
-            </div>
-          ))}
+        <p style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)', lineHeight: 1.5, marginBottom: '0.75rem' }}>
+          Este painel mostra a visão consolidada de João Pedro (captação) e Atanael (contato comercial) no período selecionado.
+        </p>
+        <div className="fvg-steps">
+          <Step num="1" title="Registre" desc={
+            <>
+              JP e AT registram suas ações em <Link href="/registrar" style={{ color: '#4DA3F7', textDecoration: 'none', fontWeight: 600 }}>Registrar</Link>.
+            </>
+          } />
+          <Step num="2" title="Acompanhe" desc={
+            <>
+              Métricas detalhadas em <Link href="/captacao" style={{ color: '#4DA3F7', textDecoration: 'none', fontWeight: 600 }}>Captação</Link> (JP) e <Link href="/contato" style={{ color: '#2DB881', textDecoration: 'none', fontWeight: 600 }}>Contato</Link> (AT).
+            </>
+          } />
+          <Step num="3" title="Audite" desc={
+            <>
+              Revise tudo em <Link href="/historico" style={{ color: '#FBBF24', textDecoration: 'none', fontWeight: 600 }}>Histórico</Link>. Para análise por tier, veja <Link href="/metricas-tier" style={{ color: '#A78BFA', textDecoration: 'none', fontWeight: 600 }}>Métricas TIER</Link>.
+            </>
+          } />
         </div>
       </div>
 
-      {/* Fechar */}
       <button
         onClick={dismiss}
+        aria-label="Fechar guia"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--muted-foreground)', fontSize: '1rem', lineHeight: 1,
-          padding: '2px', flexShrink: 0,
+          color: 'var(--muted-foreground)', fontSize: '1.1rem', lineHeight: 1,
+          padding: '4px 8px', flexShrink: 0,
         }}
         title="Não mostrar novamente"
       >×</button>
+
+      <style jsx>{`
+        .fvg-steps {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+        }
+        @media (max-width: 640px) {
+          .fvg-steps { grid-template-columns: 1fr; gap: 0.5rem; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+function Step({ num, title, desc }: { num: string; title: string; desc: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
+      <div style={{
+        width: '20px', height: '20px', borderRadius: '50%',
+        background: 'rgba(0,120,212,0.18)', border: '1px solid rgba(0,120,212,0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '0.62rem', fontWeight: 700, color: '#4DA3F7', flexShrink: 0, marginTop: '1px',
+      }}>{num}</div>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '2px' }}>{title}</p>
+        <p style={{ fontSize: '0.68rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>{desc}</p>
+      </div>
     </div>
   )
 }
