@@ -10,6 +10,14 @@ import { prefetchPage } from '@/lib/queryCache'
 
 const mainLinks = [
   {
+    section: 'Ação',
+    items: [
+      { href: '/registrar', label: 'Registrar', primary: true, icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      )},
+    ],
+  },
+  {
     section: 'Início',
     items: [
       { href: '/', label: 'Dashboard', icon: (
@@ -47,14 +55,6 @@ const mainLinks = [
       )},
       { href: '/metas', label: 'Metas', icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      )},
-    ],
-  },
-  {
-    section: 'Registros',
-    items: [
-      { href: '/registrar', label: 'Registrar', icon: (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       )},
     ],
   },
@@ -175,6 +175,7 @@ export default function Sidebar() {
             )}
             {group.items.map(link => {
               const isActive = pathname === link.href
+              const isPrimary = 'primary' in link && link.primary
               return (
                 <Link
                   key={link.href}
@@ -182,32 +183,43 @@ export default function Sidebar() {
                   style={{
                     display: 'flex', alignItems: 'center',
                     gap: collapsed ? 0 : 10,
-                    padding: collapsed ? '0' : '0 12px',
-                    height: 32, width: '100%',
+                    padding: collapsed ? '0' : isPrimary ? '0 10px' : '0 12px',
+                    height: isPrimary ? 36 : 32,
+                    margin: isPrimary ? '4px 8px' : '0',
+                    width: isPrimary ? 'calc(100% - 16px)' : '100%',
                     justifyContent: collapsed ? 'center' : 'flex-start',
-                    background: isActive ? 'rgba(0,120,212,0.15)' : 'none',
-                    color: isActive ? '#FFFFFF' : '#9E9E9E',
-                    fontWeight: isActive ? 600 : 400,
-                    fontSize: '0.78rem', textDecoration: 'none',
+                    background: isPrimary
+                      ? isActive ? '#005A9E' : '#0078D4'
+                      : isActive ? 'rgba(0,120,212,0.15)' : 'none',
+                    color: isPrimary ? '#FFFFFF' : isActive ? '#FFFFFF' : '#9E9E9E',
+                    fontWeight: isPrimary ? 600 : isActive ? 600 : 400,
+                    fontSize: isPrimary ? '0.82rem' : '0.78rem',
+                    textDecoration: 'none',
                     position: 'relative', whiteSpace: 'nowrap',
                     transition: 'background 0.1s, color 0.1s',
-                    borderLeft: isActive ? '3px solid #0078D4' : '3px solid transparent',
+                    borderLeft: isPrimary ? 'none' : isActive ? '3px solid #0078D4' : '3px solid transparent',
+                    borderRadius: isPrimary ? 6 : 0,
+                    boxShadow: isPrimary ? '0 1px 4px rgba(0,120,212,0.35)' : 'none',
                   }}
                   onMouseEnter={(e) => {
                     prefetchPage(link.href)
-                    if (!isActive) {
+                    if (isPrimary) {
+                      (e.currentTarget as HTMLAnchorElement).style.background = '#006CBF'
+                    } else if (!isActive) {
                       (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.06)'
                       ;(e.currentTarget as HTMLAnchorElement).style.color = '#FFFFFF'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isActive) {
+                    if (isPrimary) {
+                      (e.currentTarget as HTMLAnchorElement).style.background = isActive ? '#005A9E' : '#0078D4'
+                    } else if (!isActive) {
                       (e.currentTarget as HTMLAnchorElement).style.background = 'none'
                       ;(e.currentTarget as HTMLAnchorElement).style.color = '#9E9E9E'
                     }
                   }}
                 >
-                  <span style={{ flexShrink: 0, opacity: isActive ? 1 : 0.7, display: 'flex' }}>{link.icon}</span>
+                  <span style={{ flexShrink: 0, opacity: 1, display: 'flex' }}>{link.icon}</span>
                   {!collapsed && <span>{link.label}</span>}
                 </Link>
               )
