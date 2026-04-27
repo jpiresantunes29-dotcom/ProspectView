@@ -89,7 +89,18 @@
       "Bash(curl -s 'https://xvtuhtkfhnmzehsfmgsw.supabase.co/rest/v1/registros?data=gte.2026-04-21&select=*&order=data.desc&limit=10' -H 'apikey: sb_publishable_BEWXflitPsFFcso5tlzJ8g_vq_8FSTS' -H 'Authorization: Bearer sb_publishable_BEWXflitPsFFcso5tlzJ8g_vq_8FSTS')",
       "Bash(curl -s -X POST https://xvtuhtkfhnmzehsfmgsw.supabase.co/rest/v1/atividades -H 'apikey: sb_publishable_BEWXflitPsFFcso5tlzJ8g_vq_8FSTS' -H 'Authorization: Bearer sb_publishable_BEWXflitPsFFcso5tlzJ8g_vq_8FSTS' -H 'Content-Type: application/json' -H 'Prefer: return=representation' -d '{\"data\":\"2026-04-23\",\"usuario\":\"atanael\",\"tier\":1,\"tipo_atividade\":\"cold_call\",\"status_contato\":\"atendeu_normal\",\"tentativa\":1}')",
       "Bash(curl -s -X DELETE 'https://xvtuhtkfhnmzehsfmgsw.supabase.co/rest/v1/atividades?id=eq.a61783cc-4939-4008-b3d6-fd6960301b74' -H 'apikey: sb_publishable_BEWXflitPsFFcso5tlzJ8g_vq_8FSTS' -H 'Authorization: Bearer sb_publishable_BEWXflitPsFFcso5tlzJ8g_vq_8FSTS')",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(cmd.exe /c start https://prospectview.vercel.app)",
+      "Bash(xargs ls *)",
+      "Bash(find /c/Projetos/Gestao_Leads -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.md\" \\\\\\) ! -path \"*/.next/*\" -exec grep -l \"Ã\\\\|Â©\\\\|â€™\\\\|ï¿½\\\\|Date.now\\(\\)\\\\|Math.random\\(\\)\" {} \\\\;)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001)",
+      "Bash(tasklist /FI \"PID eq 23888\")",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue | Select-Object Id, Name })",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:58842)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 51670 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Projetos\\\\Gestao_Leads\" -Force | Where-Object { $_.Name -eq \"nul\" })",
+      "Bash(cmd //c \"del /f /q nul\")"
     ]
   }
 }
